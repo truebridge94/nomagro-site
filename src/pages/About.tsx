@@ -165,19 +165,19 @@ export default function About() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                name: "Dr. Kwame Osei",
+                name: "Abubakar Sabiu",
                 role: "CEO & Co-Founder",
-                background: "Agricultural Engineer, PhD in Climate Science",
-                image: "https://images.pexels.com/photos/2379004/pexels-photo-2379004.jpeg?auto=compress&cs=tinysrgb&w=400"
+                background: "Data Scientist, Machine Learning and Artificial Intelligence Expert",
+                image: "https://ibb.co/201qYBWV?auto=compress&cs=tinysrgb&w=400"
               },
               {
-                name: "Sarah Mwangi",
+                name: "Muhammad Buhari Sabiu",
                 role: "CTO & Co-Founder",
-                background: "AI/ML Expert, Former Google Research",
+                background: "B.Eng Agricultural Engineering, Msc. Environmental Management and Control",
                 image: "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=400"
               },
               {
-                name: "Prof. Amina Kone",
+                name: "Mrs. Maryam Abdurrahman",
                 role: "Head of Research",
                 background: "Agricultural Economics, Climate Adaptation",
                 image: "https://images.pexels.com/photos/3760263/pexels-photo-3760263.jpeg?auto=compress&cs=tinysrgb&w=400"

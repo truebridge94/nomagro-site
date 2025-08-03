@@ -61,7 +61,7 @@ export default function Home() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-600">Yield Increase</p>
-                    <p className="text-2xl font-bold text-green-600">+35%</p>
+                    <p className="text-2xl font-bold text-green-600">+67%</p>
                   </div>
                 </div>
               </div>

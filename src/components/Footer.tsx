@@ -56,11 +56,11 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-3">
                 <Phone className="h-5 w-5 text-green-500" />
-                <span className="text-gray-300 text-sm">+233 50 123 4567</span>
+                <span className="text-gray-300 text-sm">+234 806 252 6671</span>
               </div>
               <div className="flex items-center space-x-3">
                 <MapPin className="h-5 w-5 text-green-500" />
-                <span className="text-gray-300 text-sm">Accra, Ghana</span>
+                <span className="text-gray-300 text-sm">Kano, Nigeria</span>
               </div>
             </div>
           </div>
@@ -68,7 +68,7 @@ export default function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-gray-400 text-sm">
-            © 2024 Nomagro. All rights reserved. Empowering African Agriculture.
+            © 2025 Nomagro. All rights reserved. Empowering African Agriculture.
           </p>
         </div>
       </div>
