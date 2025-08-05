@@ -10,7 +10,7 @@ export default function Signup() {
     password: '',
     confirmPassword: '',
     country: '',
-    region: '',
+    state: '',
     farmSize: '',
     crops: ''
   });
@@ -21,7 +21,7 @@ export default function Signup() {
   const navigate = useNavigate();
 
   const countries = [
-    'Ghana', 'Nigeria', 'Kenya', 'South Africa', 'Tanzania', 'Uganda', 'Ethiopia', 
+    'Nigeria', 'Niger', 'Ghana', 'Kenya', 'Tanzania', 'Uganda', 'Ethiopia', 
     'Senegal', 'Mali', 'Burkina Faso', 'Côte d\'Ivoire', 'Cameroon'
   ];
 
