@@ -57,6 +57,14 @@ export default function Navbar() {
             {user ? (
               <div className="flex items-center space-x-4">
                 <Link
+                  to="/marketplace"
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    isActive('/marketplace') ? 'text-green-600 bg-green-50' : 'text-gray-700 hover:text-green-600'
+                  }`}
+                >
+                  Marketplace
+                </Link>
+                <Link
                   to="/dashboard"
                   className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
                     isActive('/dashboard') ? 'text-green-600 bg-green-50' : 'text-gray-700 hover:text-green-600'
@@ -140,6 +148,15 @@ export default function Navbar() {
 
             {user ? (
               <>
+                <Link
+                  to="/marketplace"
+                  className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${
+                    isActive('/marketplace') ? 'text-green-600 bg-green-50' : 'text-gray-700 hover:text-green-600'
+                  }`}
+                  onClick={() => setIsOpen(false)}
+                >
+                  Marketplace
+                </Link>
                 <Link
                   to="/dashboard"
                   className={`block px-3 py-2 rounded-md text-base font-medium transition-colors ${

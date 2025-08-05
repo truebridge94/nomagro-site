@@ -10,7 +10,8 @@ import {
   ArrowRight,
   CheckCircle,
   Users,
-  BarChart3
+  BarChart3,
+  ShoppingCart
 } from 'lucide-react';
 
 export default function Home() {
@@ -113,6 +114,11 @@ export default function Home() {
                 icon: BarChart3,
                 title: "Market Intelligence",
                 description: "Demand forecasting tools to help choose high-demand, profitable crops for your region."
+              },
+              {
+                icon: ShoppingCart,
+                title: "Agricultural Marketplace",
+                description: "Connect directly with buyers and sellers across Africa. Trade fresh produce and build sustainable networks."
               }
             ].map((feature, index) => (
               <div key={index} className="bg-gray-50 p-8 rounded-xl hover:shadow-lg transition-shadow group">
