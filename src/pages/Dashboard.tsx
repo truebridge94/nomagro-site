@@ -76,7 +76,7 @@ export default function Dashboard() {
 
         // Step 2: Fetch One Call API (include daily forecast)
         const weatherResponse = await fetch(
-          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${OPENWEATHER_API_KEY}&units=metric`
+          `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${OPENWEATHER_API_KEY}&units=metric`
         );
 
         const weatherData = await weatherResponse.json();
