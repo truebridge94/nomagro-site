@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { 
-  Thermometer, 
-  Droplets, 
-  Wind, 
-  Gauge, 
+import {
+  Thermometer,
+  Droplets,
+  Wind,
+  Gauge,
   CloudSun,
   TrendingUp,
   TrendingDown,
@@ -13,43 +13,48 @@ import {
   Clock,
   MapPin,
   User,
-  Calendar
+  Calendar,
 } from 'lucide-react';
-import { mockPredictions } from '../data/mockData'; // Keep predictions for now
+import { mockPredictions } from '../data/mockData';
 import { format } from 'date-fns';
 
-const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7'; // ← Keep safe later
+// 🔐 Replace with your real key
+const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7';
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [weather, setWeather] = useState(null);
-  const [forecast, setForecast] = useState([]); // Added: 5-day forecast
+  const [forecast, setForecast] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
-      case 'high': return 'text-red-600 bg-red-100';
-      case 'medium': return 'text-yellow-600 bg-yellow-100';
-      case 'low': return 'text-green-600 bg-green-100';
-      default: return 'text-blue-600 bg-blue-100';
+      case 'high':
+        return 'text-red-600 bg-red-100';
+      case 'medium':
+        return 'text-yellow-600 bg-yellow-100';
+      case 'low':
+        return 'text-green-600 bg-green-100';
+      default:
+        return 'text-blue-600 bg-blue-100';
     }
   };
 
   const getIcon = (iconName: string) => {
     const iconMap: { [key: string]: React.ElementType } = {
       'cloud-rain': Droplets,
-      'sun': CloudSun,
-      'wheat': TrendingUp,
-      'bug': AlertTriangle,
+      sun: CloudSun,
+      wheat: TrendingUp,
+      bug: AlertTriangle,
       'trending-up': TrendingUp,
-      'cloud-sun': CloudSun
+      'cloud-sun': CloudSun,
     };
     return iconMap[iconName] || CheckCircle;
   };
 
   useEffect(() => {
-    const fetchWeather = async () => {
+    const fetchWeatherData = async () => {
       if (!user?.location?.region || !user?.location?.country) {
         setError('Location not available');
         setLoading(false);
@@ -66,7 +71,7 @@ export default function Dashboard() {
 
         const geoData = await geoResponse.json();
 
-        if (!geoData.length) {
+        if (!geoData || geoData.length === 0) {
           setError('Could not find coordinates for this location.');
           setLoading(false);
           return;
@@ -74,48 +79,99 @@ export default function Dashboard() {
 
         const { lat, lon } = geoData[0];
 
-        // Step 2: Fetch One Call API (include daily forecast)
-        const weatherResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${OPENWEATHER_API_KEY}&units=metric`
+        // Step 2: Fetch current weather
+        const currentResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
         );
 
-        const weatherData = await weatherResponse.json();
-
-        if (weatherData.cod && weatherData.message) {
-          throw new Error(weatherData.message);
+        if (!currentResponse.ok) {
+          throw new Error('Failed to load current weather');
         }
 
-        // Current weather
-        const current = weatherData.current;
+        const currentData = await currentResponse.json();
+
         const processedWeather = {
-          temperature: Math.round(current.temp),
-          condition: current.weather[0].description,
-          humidity: current.humidity,
-          windSpeed: Math.round(current.wind_speed),
-          pressure: current.pressure,
-          rainfall: current.rain ? current.rain['1h'] || 0 : 0,
-          icon: current.weather[0].icon,
+          temperature: Math.round(currentData.main.temp),
+          condition: currentData.weather[0].description,
+          humidity: currentData.main.humidity,
+          windSpeed: Math.round(currentData.wind.speed),
+          pressure: currentData.main.pressure,
+          rainfall: 0, // not always available
+          icon: currentData.weather[0].icon,
         };
 
-        // 5-Day Forecast (next 5 days, skip today)
-        const dailyForecast = weatherData.daily.slice(1, 6).map(day => ({
-          day: format(new Date(day.dt * 1000), 'EEE'), // Mon, Tue, etc.
-          temp: Math.round(day.temp.day),
-          icon: day.weather[0].icon,
-          condition: day.weather[0].description,
-        }));
+        // Step 3: Fetch 5-day / 3-hour forecast
+        const forecastResponse = await fetch(
+          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
+        );
+
+        if (!forecastResponse.ok) {
+          throw new Error('Failed to load forecast data');
+        }
+
+        const forecastData = await forecastResponse.json();
+
+        // Group forecast by day (skip today), get max temp and dominant weather
+        const dailyMap = {};
+        const today = new Date().getDate();
+
+        forecastData.list.forEach((item) => {
+          const date = new Date(item.dt * 1000);
+          const day = date.getDate();
+          const weekday = format(date, 'EEE');
+
+          if (day === today) return; // skip today
+
+          if (!dailyMap[day]) {
+            dailyMap[day] = {
+              day: weekday,
+              temps: [],
+              icons: {},
+              conditions: {},
+            };
+          }
+
+          dailyMap[day].temps.push(item.main.temp);
+          dailyMap[day].icons[item.weather[0].icon] = (dailyMap[day].icons[item.weather[0].icon] || 0) + 1;
+          dailyMap[day].conditions[item.weather[0].description] =
+            (dailyMap[day].conditions[item.weather[0].description] || 0) + 1;
+        });
+
+        // Process into 5-day forecast
+        const dailyForecast = Object.values(dailyMap)
+          .slice(0, 5)
+          .map((day: any) => {
+            const maxTemp = Math.round(Math.max(...day.temps));
+            const icon = Object.keys(day.icons).reduce((a, b) =>
+              day.icons[a] > day.icons[b] ? a : b
+            );
+            const condition = Object.keys(day.conditions).reduce((a, b) =>
+              day.conditions[a] > day.conditions[b] ? a : b
+            );
+
+            return {
+              day: day.day,
+              temp: maxTemp,
+              icon,
+              condition,
+            };
+          });
 
         setWeather(processedWeather);
         setForecast(dailyForecast);
         setLoading(false);
       } catch (err) {
         console.error('Weather fetch error:', err);
-        setError('Failed to load weather data. Please try again later.');
+        setError(
+          err instanceof Error
+            ? `Failed: ${err.message}`
+            : 'Failed to load weather data.'
+        );
         setLoading(false);
       }
     };
 
-    fetchWeather();
+    fetchWeatherData();
   }, [user]);
 
   if (!user) {
@@ -149,7 +205,9 @@ export default function Dashboard() {
                   <User className="h-5 w-5 text-gray-600" />
                   <div>
                     <p className="text-sm text-gray-600">Farm Size</p>
-                    <p className="font-semibold">{user.farmSize ? `${user.farmSize} ha` : 'Not specified'}</p>
+                    <p className="font-semibold">
+                      {user.farmSize ? `${user.farmSize} ha` : 'Not specified'}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -186,6 +244,7 @@ export default function Dashboard() {
                   <div className="text-blue-100 capitalize">{weather.condition}</div>
                 </div>
               </div>
+
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                 <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
                   <Droplets className="h-6 w-6 mx-auto mb-2" />
@@ -204,7 +263,7 @@ export default function Dashboard() {
                 </div>
                 <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
                   <Droplets className="h-6 w-6 mx-auto mb-2" />
-                  <div className="text-sm opacity-90">Rainfall (1h)</div>
+                  <div className="text-sm opacity-90">Rainfall (Est.)</div>
                   <div className="text-lg font-semibold">{weather.rainfall} mm</div>
                 </div>
               </div>
@@ -244,10 +303,19 @@ export default function Dashboard() {
               {mockPredictions.map((prediction, index) => {
                 const IconComponent = getIcon(prediction.icon);
                 return (
-                  <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
+                  <div
+                    key={index}
+                    className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                  >
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-lg ${getSeverityColor(prediction.severity).replace('text-', 'bg-').replace('-600', '-100')}`}>
-                        <IconComponent className={`h-6 w-6 ${getSeverityColor(prediction.severity).split(' ')[0]}`} />
+                      <div
+                        className={`p-3 rounded-lg ${getSeverityColor(prediction.severity)
+                          .replace('text-', 'bg-')
+                          .replace('-600', '-100')}`}
+                      >
+                        <IconComponent
+                          className={`h-6 w-6 ${getSeverityColor(prediction.severity).split(' ')[0]}`}
+                        />
                       </div>
                       <div className="text-right">
                         <div className="text-sm text-gray-500">Confidence</div>
@@ -268,7 +336,11 @@ export default function Dashboard() {
                         <span>{format(prediction.date, 'MMM dd, yyyy')}</span>
                       </div>
                       {prediction.severity && (
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(prediction.severity)}`}>
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(
+                            prediction.severity
+                          )}`}
+                        >
                           {prediction.severity.toUpperCase()}
                         </span>
                       )}
@@ -300,7 +372,10 @@ export default function Dashboard() {
                     <div className="text-sm text-gray-600">Main Crops</div>
                     <div className="flex flex-wrap gap-1 mt-1">
                       {user.crops.map((crop, index) => (
-                        <span key={index} className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium">
+                        <span
+                          key={index}
+                          className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium"
+                        >
                           {crop}
                         </span>
                       ))}
