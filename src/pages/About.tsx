@@ -168,19 +168,19 @@ export default function About() {
                 name: "Abubakar Sabiu",
                 role: "CEO & Co-Founder",
                 background: "Data Scientist, Machine Learning and Artificial Intelligence Expert",
-                image: "https://ibb.co/201qYBWV"
+                image: "/images/abubakar.jpg"
               },
               {
                 name: "Muhammad Buhari Sabiu",
                 role: "CTO & Co-Founder",
                 background: "B.Eng Agricultural Engineering, Msc. Environmental Management and Control",
-                image: "https://images.pexels.com/photos/3760067/pexels-photo-3760067.jpeg?auto=compress&cs=tinysrgb&w=400"
+                image: "/images/buhari.png"
               },
               {
                 name: "Mrs. Maryam Abdurrahman",
                 role: "Head of Research",
                 background: "Agricultural Economics, Climate Adaptation",
-                image: "https://images.pexels.com/photos/3760263/pexels-photo-3760263.jpeg?auto=compress&cs=tinysrgb&w=400"
+                image:"/images/maryam.png.jpg"
               }
             ].map((member, index) => (
               <div key={index} className="text-center space-y-4">
