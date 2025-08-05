@@ -134,7 +134,7 @@ export default function Home() {
             {[
               { number: "10,000+", label: "Farmers Served", icon: Users },
               { number: "85%", label: "Prediction Accuracy", icon: Brain },
-              { number: "35%", label: "Average Yield Increase", icon: TrendingUp }
+              { number: "67%", label: "Average Yield Increase", icon: TrendingUp }
             ].map((stat, index) => (
               <div key={index} className="text-white">
                 <div className="flex justify-center mb-4">
