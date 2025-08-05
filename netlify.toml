@@ -1,0 +1,8 @@
+[build]
+  publish = "build"
+  command = "npm run build"
+  functions = "netlify/functions"
+
+[dev]
+  framework = "#custom"
+  command = "npm run start"

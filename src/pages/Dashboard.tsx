@@ -18,13 +18,29 @@ import {
 import { mockPredictions } from '../data/mockData';
 import { format } from 'date-fns';
 
-// 🔐 Replace with your real key
-const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7';
+// === Interface for Backend Response ===
+interface WeatherResponse {
+  current: {
+    temperature: number;
+    condition: string;
+    humidity: number;
+    windSpeed: number;
+    pressure: number;
+    rainfall: number;
+    icon: string;
+  };
+  forecast: {
+    day: string;
+    temp: number;
+    icon: string;
+    condition: string;
+  }[];
+}
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [weather, setWeather] = useState(null);
-  const [forecast, setForecast] = useState([]);
+  const [weather, setWeather] = useState<WeatherResponse['current'] | null>(null);
+  const [forecast, setForecast] = useState<WeatherResponse['forecast']>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -53,8 +69,9 @@ export default function Dashboard() {
     return iconMap[iconName] || CheckCircle;
   };
 
+  // === Fetch Weather from Netlify Function ===
   useEffect(() => {
-    const fetchWeatherData = async () => {
+    const fetchWeather = async () => {
       if (!user?.location?.region || !user?.location?.country) {
         setError('Location not available');
         setLoading(false);
@@ -62,116 +79,30 @@ export default function Dashboard() {
       }
 
       try {
-        // Step 1: Geocode location → lat, lon
-        const geoResponse = await fetch(
-          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
-            `${user.location.region},${user.location.country}`
-          )}&limit=1&appid=${OPENWEATHER_API_KEY}`
+        const response = await fetch(
+          `/.netlify/functions/weather?region=${user.location.region}&country=${user.location.country}`
         );
 
-        const geoData = await geoResponse.json();
-
-        if (!geoData || geoData.length === 0) {
-          setError('Could not find coordinates for this location.');
-          setLoading(false);
-          return;
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Failed to load weather data');
         }
 
-        const { lat, lon } = geoData[0];
+        const data: WeatherResponse = await response.json();
 
-        // Step 2: Fetch current weather
-        const currentResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
-        );
-
-        if (!currentResponse.ok) {
-          throw new Error('Failed to load current weather');
-        }
-
-        const currentData = await currentResponse.json();
-
-        const processedWeather = {
-          temperature: Math.round(currentData.main.temp),
-          condition: currentData.weather[0].description,
-          humidity: currentData.main.humidity,
-          windSpeed: Math.round(currentData.wind.speed),
-          pressure: currentData.main.pressure,
-          rainfall: currentData.rain ? currentData.rain['1h'] || 0 : 0,
-          icon: currentData.weather[0].icon,
-        };
-
-        // Step 3: Fetch 5-day forecast
-        const forecastResponse = await fetch(
-          `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
-        );
-
-        if (!forecastResponse.ok) {
-          throw new Error('Failed to load forecast data');
-        }
-
-        const forecastData = await forecastResponse.json();
-
-        // Group forecast by day → compute max temp, condition, and icon per day
-        const dailyMap = {};
-        const today = new Date().getDate();
-
-        forecastData.list.forEach((item) => {
-          const date = new Date(item.dt * 1000);
-          const day = date.getDate();
-          const weekday = format(date, 'EEE');
-
-          if (day === today) return; // skip today
-
-          if (!dailyMap[day]) {
-            dailyMap[day] = {
-              day: weekday,
-              temps: [],
-              icons: {},
-              conditions: {},
-            };
-          }
-
-          dailyMap[day].temps.push(item.main.temp);
-          dailyMap[day].icons[item.weather[0].icon] = (dailyMap[day].icons[item.weather[0].icon] || 0) + 1;
-          dailyMap[day].conditions[item.weather[0].description] =
-            (dailyMap[day].conditions[item.weather[0].description] || 0) + 1;
-        });
-
-        // Process into 5-day forecast
-        const dailyForecast = Object.values(dailyMap)
-          .slice(0, 5)
-          .map((day: any) => {
-            const maxTemp = Math.round(Math.max(...day.temps));
-            const icon = Object.keys(day.icons).reduce((a, b) =>
-              day.icons[a] > day.icons[b] ? a : b
-            );
-            const condition = Object.keys(day.conditions).reduce((a, b) =>
-              day.conditions[a] > day.conditions[b] ? a : b
-            );
-
-            return {
-              day: day.day,
-              temp: maxTemp,
-              icon,
-              condition,
-            };
-          });
-
-        setWeather(processedWeather);
-        setForecast(dailyForecast);
-        setLoading(false);
+        setWeather(data.current);
+        setForecast(data.forecast);
       } catch (err) {
         console.error('Weather fetch error:', err);
         setError(
-          err instanceof Error
-            ? `Failed: ${err.message}`
-            : 'Failed to load weather data.'
+          err instanceof Error ? err.message : 'Failed to load weather data.'
         );
+      } finally {
         setLoading(false);
       }
     };
 
-    fetchWeatherData();
+    fetchWeather();
   }, [user]);
 
   if (!user) {
