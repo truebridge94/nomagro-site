@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { 
   Thermometer, 
@@ -15,11 +15,16 @@ import {
   User,
   Calendar
 } from 'lucide-react';
-import { mockWeatherData, mockPredictions } from '../data/mockData';
+import { mockPredictions } from '../data/mockData'; // Keep predictions for now
 import { format } from 'date-fns';
+
+const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7'; // ← Replace or move to .env
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [weather, setWeather] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
@@ -41,6 +46,67 @@ export default function Dashboard() {
     };
     return iconMap[iconName] || CheckCircle;
   };
+
+  useEffect(() => {
+    const fetchWeather = async () => {
+      if (!user?.location?.region || !user?.location?.country) {
+        setError('Location not available');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        // Step 1: Geocode location (Region + Country → lat, lon)
+        const geoResponse = await fetch(
+          `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
+            `${user.location.region},${user.location.country}`
+          )}&limit=1&appid=${OPENWEATHER_API_KEY}`
+        );
+
+        const geoData = await geoResponse.json();
+
+        if (!geoData.length) {
+          setError('Could not find coordinates for this location.');
+          setLoading(false);
+          return;
+        }
+
+        const { lat, lon } = geoData[0];
+
+        // Step 2: Fetch current weather using One Call API
+        const weatherResponse = await fetch(
+          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily&appid=${OPENWEATHER_API_KEY}&units=metric`
+        );
+
+        const weatherData = await weatherResponse.json();
+
+        if (weatherData.cod && weatherData.message) {
+          throw new Error(weatherData.message);
+        }
+
+        // Extract relevant weather
+        const current = weatherData.current;
+        const processedWeather = {
+          temperature: Math.round(current.temp),
+          condition: current.weather[0].description,
+          humidity: current.humidity,
+          windSpeed: Math.round(current.wind_speed),
+          pressure: current.pressure,
+          rainfall: current.rain ? current.rain['1h'] || 0 : 0,
+          icon: current.weather[0].icon,
+        };
+
+        setWeather(processedWeather);
+        setLoading(false);
+      } catch (err) {
+        console.error('Weather fetch error:', err);
+        setError('Failed to load weather data. Please try again later.');
+        setLoading(false);
+      }
+    };
+
+    fetchWeather();
+  }, [user]);
 
   if (!user) {
     return <div>Loading...</div>;
@@ -83,39 +149,52 @@ export default function Dashboard() {
 
         {/* Weather Card */}
         <div className="bg-gradient-to-r from-blue-500 to-blue-600 rounded-2xl p-6 text-white mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-bold mb-2">Current Weather</h2>
-              <p className="text-blue-100">{user.location.region}, {user.location.country}</p>
+          {loading ? (
+            <div className="text-center py-8">
+              <div className="animate-spin h-8 w-8 rounded-full border-b-2 border-white mx-auto"></div>
+              <p className="mt-4">Loading weather data...</p>
             </div>
-            <div className="text-right">
-              <div className="text-4xl font-bold">{mockWeatherData.temperature}°C</div>
-              <div className="text-blue-100">{mockWeatherData.condition}</div>
+          ) : error ? (
+            <div className="text-center py-8 text-red-100">
+              <AlertTriangle className="h-8 w-8 mx-auto mb-2 opacity-70" />
+              <p>{error}</p>
             </div>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-              <Droplets className="h-6 w-6 mx-auto mb-2" />
-              <div className="text-sm opacity-90">Humidity</div>
-              <div className="text-lg font-semibold">{mockWeatherData.humidity}%</div>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-              <Wind className="h-6 w-6 mx-auto mb-2" />
-              <div className="text-sm opacity-90">Wind Speed</div>
-              <div className="text-lg font-semibold">{mockWeatherData.windSpeed} km/h</div>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-              <Gauge className="h-6 w-6 mx-auto mb-2" />
-              <div className="text-sm opacity-90">Pressure</div>
-              <div className="text-lg font-semibold">{mockWeatherData.pressure} hPa</div>
-            </div>
-            <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
-              <Droplets className="h-6 w-6 mx-auto mb-2" />
-              <div className="text-sm opacity-90">Rainfall</div>
-              <div className="text-lg font-semibold">{mockWeatherData.rainfall} mm</div>
-            </div>
-          </div>
+          ) : weather ? (
+            <>
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-2xl font-bold mb-2">Current Weather</h2>
+                  <p className="text-blue-100">{user.location.region}, {user.location.country}</p>
+                </div>
+                <div className="text-right">
+                  <div className="text-4xl font-bold">{weather.temperature}°C</div>
+                  <div className="text-blue-100 capitalize">{weather.condition}</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+                <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                  <Droplets className="h-6 w-6 mx-auto mb-2" />
+                  <div className="text-sm opacity-90">Humidity</div>
+                  <div className="text-lg font-semibold">{weather.humidity}%</div>
+                </div>
+                <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                  <Wind className="h-6 w-6 mx-auto mb-2" />
+                  <div className="text-sm opacity-90">Wind Speed</div>
+                  <div className="text-lg font-semibold">{weather.windSpeed} km/h</div>
+                </div>
+                <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                  <Gauge className="h-6 w-6 mx-auto mb-2" />
+                  <div className="text-sm opacity-90">Pressure</div>
+                  <div className="text-lg font-semibold">{weather.pressure} hPa</div>
+                </div>
+                <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
+                  <Droplets className="h-6 w-6 mx-auto mb-2" />
+                  <div className="text-sm opacity-90">Rainfall (1h)</div>
+                  <div className="text-lg font-semibold">{weather.rainfall} mm</div>
+                </div>
+              </div>
+            </>
+          ) : null}
         </div>
 
         {/* Predictions Grid */}
@@ -123,15 +202,13 @@ export default function Dashboard() {
           {/* Main Predictions */}
           <div className="lg:col-span-2 space-y-6">
             <h2 className="text-2xl font-bold text-gray-900">AI Predictions for Your Location</h2>
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {mockPredictions.map((prediction, index) => {
                 const IconComponent = getIcon(prediction.icon);
-                
                 return (
                   <div key={index} className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow">
                     <div className="flex items-start justify-between mb-4">
-                      <div className={`p-3 rounded-lg ${getSeverityColor(prediction.severity).replace('text-', 'bg-').replace('bg-', 'bg-').replace('-600', '-100')}`}>
+                      <div className={`p-3 rounded-lg ${getSeverityColor(prediction.severity).replace('text-', 'bg-').replace('-600', '-100')}`}>
                         <IconComponent className={`h-6 w-6 ${getSeverityColor(prediction.severity).split(' ')[0]}`} />
                       </div>
                       <div className="text-right">
@@ -139,17 +216,14 @@ export default function Dashboard() {
                         <div className="text-lg font-semibold text-green-600">{prediction.confidence}%</div>
                       </div>
                     </div>
-                    
                     <h3 className="text-lg font-semibold text-gray-900 mb-2">{prediction.title}</h3>
                     <p className="text-gray-600 mb-4">{prediction.description}</p>
-                    
                     {prediction.value && (
                       <div className="bg-gray-50 rounded-lg p-3 mb-4">
                         <div className="text-sm text-gray-600">Prediction Value</div>
                         <div className="text-lg font-semibold text-gray-900">{prediction.value}</div>
                       </div>
                     )}
-                    
                     <div className="flex items-center justify-between text-sm text-gray-500">
                       <div className="flex items-center space-x-1">
                         <Clock className="h-4 w-4" />
