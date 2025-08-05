@@ -96,11 +96,11 @@ export default function Dashboard() {
           humidity: currentData.main.humidity,
           windSpeed: Math.round(currentData.wind.speed),
           pressure: currentData.main.pressure,
-          rainfall: 0, // not always available
+          rainfall: currentData.rain ? currentData.rain['1h'] || 0 : 0,
           icon: currentData.weather[0].icon,
         };
 
-        // Step 3: Fetch 5-day / 3-hour forecast
+        // Step 3: Fetch 5-day forecast
         const forecastResponse = await fetch(
           `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${OPENWEATHER_API_KEY}&units=metric`
         );
@@ -111,7 +111,7 @@ export default function Dashboard() {
 
         const forecastData = await forecastResponse.json();
 
-        // Group forecast by day (skip today), get max temp and dominant weather
+        // Group forecast by day → compute max temp, condition, and icon per day
         const dailyMap = {};
         const today = new Date().getDate();
 
@@ -236,7 +236,7 @@ export default function Dashboard() {
                 </div>
                 <div className="text-right">
                   <img
-                    src={`http://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                    src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
                     alt="weather"
                     className="h-12 w-12 mx-auto"
                   />
@@ -263,7 +263,7 @@ export default function Dashboard() {
                 </div>
                 <div className="bg-white bg-opacity-20 rounded-lg p-4 text-center">
                   <Droplets className="h-6 w-6 mx-auto mb-2" />
-                  <div className="text-sm opacity-90">Rainfall (Est.)</div>
+                  <div className="text-sm opacity-90">Rainfall (1h)</div>
                   <div className="text-lg font-semibold">{weather.rainfall} mm</div>
                 </div>
               </div>
@@ -280,7 +280,7 @@ export default function Dashboard() {
                 <div key={index} className="text-center">
                   <div className="text-sm font-medium text-gray-900">{day.day}</div>
                   <img
-                    src={`http://openweathermap.org/img/wn/${day.icon}@2x.png`}
+                    src={`https://openweathermap.org/img/wn/${day.icon}@2x.png`}
                     alt={day.condition}
                     className="w-12 h-12 mx-auto my-2"
                   />
