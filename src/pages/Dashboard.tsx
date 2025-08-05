@@ -64,7 +64,7 @@ export default function Dashboard() {
       try {
         // Step 1: Geocode location → lat, lon
         const geoResponse = await fetch(
-          `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
+          `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
             `${user.location.region},${user.location.country}`
           )}&limit=1&appid=${OPENWEATHER_API_KEY}`
         );
