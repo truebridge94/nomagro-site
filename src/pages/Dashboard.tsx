@@ -18,11 +18,12 @@ import {
 import { mockPredictions } from '../data/mockData'; // Keep predictions for now
 import { format } from 'date-fns';
 
-const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7'; // ← Replace or move to .env
+const OPENWEATHER_API_KEY = '875ab416117c9b81e0550bfa979133c7'; // ← Keep safe later
 
 export default function Dashboard() {
   const { user } = useAuth();
   const [weather, setWeather] = useState(null);
+  const [forecast, setForecast] = useState([]); // Added: 5-day forecast
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
@@ -56,7 +57,7 @@ export default function Dashboard() {
       }
 
       try {
-        // Step 1: Geocode location (Region + Country → lat, lon)
+        // Step 1: Geocode location → lat, lon
         const geoResponse = await fetch(
           `http://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(
             `${user.location.region},${user.location.country}`
@@ -73,9 +74,9 @@ export default function Dashboard() {
 
         const { lat, lon } = geoData[0];
 
-        // Step 2: Fetch current weather using One Call API
+        // Step 2: Fetch One Call API (include daily forecast)
         const weatherResponse = await fetch(
-          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly,daily&appid=${OPENWEATHER_API_KEY}&units=metric`
+          `https://api.openweathermap.org/data/3.0/onecall?lat=${lat}&lon=${lon}&exclude=minutely,hourly&appid=${OPENWEATHER_API_KEY}&units=metric`
         );
 
         const weatherData = await weatherResponse.json();
@@ -84,7 +85,7 @@ export default function Dashboard() {
           throw new Error(weatherData.message);
         }
 
-        // Extract relevant weather
+        // Current weather
         const current = weatherData.current;
         const processedWeather = {
           temperature: Math.round(current.temp),
@@ -96,7 +97,16 @@ export default function Dashboard() {
           icon: current.weather[0].icon,
         };
 
+        // 5-Day Forecast (next 5 days, skip today)
+        const dailyForecast = weatherData.daily.slice(1, 6).map(day => ({
+          day: format(new Date(day.dt * 1000), 'EEE'), // Mon, Tue, etc.
+          temp: Math.round(day.temp.day),
+          icon: day.weather[0].icon,
+          condition: day.weather[0].description,
+        }));
+
         setWeather(processedWeather);
+        setForecast(dailyForecast);
         setLoading(false);
       } catch (err) {
         console.error('Weather fetch error:', err);
@@ -167,7 +177,12 @@ export default function Dashboard() {
                   <p className="text-blue-100">{user.location.region}, {user.location.country}</p>
                 </div>
                 <div className="text-right">
-                  <div className="text-4xl font-bold">{weather.temperature}°C</div>
+                  <img
+                    src={`http://openweathermap.org/img/wn/${weather.icon}@2x.png`}
+                    alt="weather"
+                    className="h-12 w-12 mx-auto"
+                  />
+                  <div className="text-4xl font-bold mt-1">{weather.temperature}°C</div>
                   <div className="text-blue-100 capitalize">{weather.condition}</div>
                 </div>
               </div>
@@ -196,6 +211,29 @@ export default function Dashboard() {
             </>
           ) : null}
         </div>
+
+        {/* 5-Day Forecast */}
+        {forecast.length > 0 && (
+          <div className="bg-white rounded-xl shadow-lg p-6 mb-8">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">5-Day Forecast</h3>
+            <div className="grid grid-cols-5 gap-4">
+              {forecast.map((day, index) => (
+                <div key={index} className="text-center">
+                  <div className="text-sm font-medium text-gray-900">{day.day}</div>
+                  <img
+                    src={`http://openweathermap.org/img/wn/${day.icon}@2x.png`}
+                    alt={day.condition}
+                    className="w-12 h-12 mx-auto my-2"
+                  />
+                  <div className="text-lg font-bold text-gray-900">{day.temp}°</div>
+                  <div className="text-xs text-gray-600 truncate" title={day.condition}>
+                    {day.condition}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Predictions Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
