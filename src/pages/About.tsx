@@ -168,7 +168,7 @@ export default function About() {
                 name: "Abubakar Sabiu",
                 role: "CEO & Co-Founder",
                 background: "Data Scientist, Machine Learning and Artificial Intelligence Expert",
-                image: "https://ibb.co/201qYBWV?auto=compress&cs=tinysrgb&w=400"
+                image: "https://ibb.co/201qYBWV"
               },
               {
                 name: "Muhammad Buhari Sabiu",
