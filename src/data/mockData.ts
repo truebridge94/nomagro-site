@@ -1,4 +1,5 @@
 import { WeatherData, Prediction, BlogPost } from '../types';
+import { Product } from '../types';
 
 export const mockWeatherData: WeatherData = {
   temperature: 28,
@@ -58,6 +59,180 @@ export const mockPredictions: Prediction[] = [
   }
 ];
 
+export const mockProducts: Product[] = [
+  {
+    id: '1',
+    name: 'Premium Cocoa Beans',
+    description: 'High-quality organic cocoa beans from Ghana. Perfect for chocolate production with rich flavor profile.',
+    price: 2500,
+    unit: 'per ton',
+    category: 'Cash Crops',
+    images: [
+      'https://images.pexels.com/photos/4226796/pexels-photo-4226796.jpeg?auto=compress&cs=tinysrgb&w=800',
+      'https://images.pexels.com/photos/4226801/pexels-photo-4226801.jpeg?auto=compress&cs=tinysrgb&w=400'
+    ],
+    sellerId: '1',
+    sellerName: 'Kwame Asante',
+    sellerContact: {
+      phone: '+233 24 123 4567',
+      email: 'kwame@example.com',
+      whatsapp: '+233 24 123 4567'
+    },
+    location: {
+      country: 'Ghana',
+      region: 'Ashanti Region',
+      coordinates: { lat: 6.6885, lng: -1.6244 }
+    },
+    quantity: 50,
+    harvestDate: new Date('2024-11-15'),
+    isOrganic: true,
+    status: 'available',
+    createdAt: new Date('2024-12-01'),
+    updatedAt: new Date('2024-12-01')
+  },
+  {
+    id: '2',
+    name: 'Fresh Cassava Tubers',
+    description: 'Freshly harvested cassava tubers, perfect for processing into flour or direct consumption.',
+    price: 800,
+    unit: 'per ton',
+    category: 'Root Crops',
+    images: [
+      'https://images.pexels.com/photos/7129165/pexels-photo-7129165.jpeg?auto=compress&cs=tinysrgb&w=800'
+    ],
+    sellerId: '2',
+    sellerName: 'Amina Kone',
+    sellerContact: {
+      phone: '+225 07 89 12 34',
+      email: 'amina@example.com'
+    },
+    location: {
+      country: 'Côte d\'Ivoire',
+      region: 'Bouaké',
+      coordinates: { lat: 7.6944, lng: -5.0300 }
+    },
+    quantity: 25,
+    harvestDate: new Date('2024-12-05'),
+    isOrganic: false,
+    status: 'available',
+    createdAt: new Date('2024-12-08'),
+    updatedAt: new Date('2024-12-08')
+  },
+  {
+    id: '3',
+    name: 'Yellow Maize Grain',
+    description: 'High-quality yellow maize suitable for animal feed and human consumption. Well-dried and stored.',
+    price: 1200,
+    unit: 'per ton',
+    category: 'Cereals',
+    images: [
+      'https://images.pexels.com/photos/547263/pexels-photo-547263.jpeg?auto=compress&cs=tinysrgb&w=800'
+    ],
+    sellerId: '3',
+    sellerName: 'Samuel Osei',
+    sellerContact: {
+      phone: '+233 20 456 7890',
+      email: 'samuel@example.com',
+      whatsapp: '+233 20 456 7890'
+    },
+    location: {
+      country: 'Ghana',
+      region: 'Northern Region',
+      coordinates: { lat: 9.4034, lng: -0.8424 }
+    },
+    quantity: 100,
+    harvestDate: new Date('2024-10-20'),
+    isOrganic: false,
+    status: 'available',
+    createdAt: new Date('2024-11-25'),
+    updatedAt: new Date('2024-11-25')
+  },
+  {
+    id: '4',
+    name: 'Organic Tomatoes',
+    description: 'Fresh organic tomatoes, perfect for local markets and restaurants. Pesticide-free cultivation.',
+    price: 150,
+    unit: 'per crate (25kg)',
+    category: 'Vegetables',
+    images: [
+      'https://images.pexels.com/photos/1327838/pexels-photo-1327838.jpeg?auto=compress&cs=tinysrgb&w=800'
+    ],
+    sellerId: '4',
+    sellerName: 'Sarah Mwangi',
+    sellerContact: {
+      phone: '+254 712 345 678',
+      email: 'sarah@example.com'
+    },
+    location: {
+      country: 'Kenya',
+      region: 'Central Kenya',
+      coordinates: { lat: -0.0236, lng: 37.9062 }
+    },
+    quantity: 200,
+    harvestDate: new Date('2024-12-10'),
+    isOrganic: true,
+    status: 'available',
+    createdAt: new Date('2024-12-11'),
+    updatedAt: new Date('2024-12-11')
+  },
+  {
+    id: '5',
+    name: 'Rice Paddy',
+    description: 'Premium quality rice paddy from irrigated fields. Suitable for milling into high-grade rice.',
+    price: 1800,
+    unit: 'per ton',
+    category: 'Cereals',
+    images: [
+      'https://images.pexels.com/photos/1459339/pexels-photo-1459339.jpeg?auto=compress&cs=tinysrgb&w=800'
+    ],
+    sellerId: '5',
+    sellerName: 'Ibrahim Diallo',
+    sellerContact: {
+      phone: '+221 77 123 45 67',
+      email: 'ibrahim@example.com',
+      whatsapp: '+221 77 123 45 67'
+    },
+    location: {
+      country: 'Senegal',
+      region: 'Saint-Louis',
+      coordinates: { lat: 16.0469, lng: -16.4975 }
+    },
+    quantity: 75,
+    harvestDate: new Date('2024-11-30'),
+    isOrganic: false,
+    status: 'available',
+    createdAt: new Date('2024-12-05'),
+    updatedAt: new Date('2024-12-05')
+  },
+  {
+    id: '6',
+    name: 'Sweet Potatoes',
+    description: 'Orange-fleshed sweet potatoes rich in vitamin A. Great for both fresh market and processing.',
+    price: 600,
+    unit: 'per ton',
+    category: 'Root Crops',
+    images: [
+      'https://images.pexels.com/photos/1327838/pexels-photo-1327838.jpeg?auto=compress&cs=tinysrgb&w=800'
+    ],
+    sellerId: '6',
+    sellerName: 'Grace Nakamura',
+    sellerContact: {
+      phone: '+256 701 234 567',
+      email: 'grace@example.com'
+    },
+    location: {
+      country: 'Uganda',
+      region: 'Central Uganda',
+      coordinates: { lat: 0.3476, lng: 32.5825 }
+    },
+    quantity: 40,
+    harvestDate: new Date('2024-12-01'),
+    isOrganic: true,
+    status: 'available',
+    createdAt: new Date('2024-12-03'),
+    updatedAt: new Date('2024-12-03')
+  }
+];
 export const mockBlogPosts: BlogPost[] = [
   {
     id: '1',
