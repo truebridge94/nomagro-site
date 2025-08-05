@@ -7,6 +7,9 @@ export default defineConfig({
     exclude: ['lucide-react'],
   },
   build: {
-    outDir: 'build', // change output folder to match Netlify setting
+    rollupOptions: {
+      // Exclude node-fetch from bundling
+      external: ['node-fetch'],
+    },
   },
 });
