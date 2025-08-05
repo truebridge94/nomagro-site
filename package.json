@@ -8,7 +8,6 @@
     "build": "react-scripts build && node netlify/postBuild.js",
     "lint": "eslint .",
     "preview": "vite preview",
-    "start": "react-scripts start",
     "tsc": "tsc --noEmit -p ."
   },
   "dependencies": {
