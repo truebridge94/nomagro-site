@@ -51,7 +51,7 @@ export default function Home() {
             </div>
             <div className="relative">
               <img
-                src="https://images.pexels.com/photos/2518861/pexels-photo-2518861.jpeg?auto=compress&cs=tinysrgb&w=800"
+                src="/images/africa.jpg"
                 alt="Smart Agriculture"
                 className="rounded-2xl shadow-2xl"
               />

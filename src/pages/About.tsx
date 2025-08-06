@@ -12,8 +12,7 @@ export default function About() {
               About <span className="text-green-600">Nomagro</span>
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              We're on a mission to revolutionize African agriculture through cutting-edge AI technology, 
-              empowering farmers with the insights they need to thrive in an changing climate.
+              Using cutting-edge AI, we deliver data-driven support to African farmers, helping them thrive amid growing climate uncertainties
             </p>
           </div>
         </div>
@@ -180,7 +179,7 @@ export default function About() {
                 name: "Mrs. Maryam Abdurrahman",
                 role: "Head of Research",
                 background: "Agricultural Economics, Climate Adaptation",
-                image:"/images/maryam.png.jpg"
+                image:"/images/maryam.png"
               }
             ].map((member, index) => (
               <div key={index} className="text-center space-y-4">
