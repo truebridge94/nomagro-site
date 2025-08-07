@@ -1,6 +1,7 @@
 import React from 'react';
-import { Sprout, Mail, Phone, MapPin, Facebook, Twitter, Linkedin } from 'lucide-react';
+import { Sprout, Mail, Phone, MapPin } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { Facebook, Twitter, Linkedin } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -17,9 +18,30 @@ export default function Footer() {
               Empowering African agriculture through AI-powered predictions and smart farming solutions.
             </p>
             <div className="flex space-x-4">
-              <Facebook className="h-5 w-5 text-gray-400 hover:text-green-500 cursor-pointer transition-colors" />
-              <Twitter className="h-5 w-5 text-gray-400 hover:text-green-500 cursor-pointer transition-colors" />
-              <Linkedin className="h-5 w-5 text-gray-400 hover:text-green-500 cursor-pointer transition-colors" />
+              <a
+                href="https://web.facebook.com/profile.php?id=61579020008785#"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Facebook"
+              >
+                <Facebook className="h-5 w-5 text-gray-400 hover:text-green-500 transition-colors" />
+              </a>
+              <a
+                href="https://twitter.com/nomagro"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Twitter"
+              >
+                <Twitter className="h-5 w-5 text-gray-400 hover:text-green-500 transition-colors" />
+              </a>
+              <a
+                href="https://linkedin.com/company/nomagro-africa/"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="LinkedIn"
+              >
+                <Linkedin className="h-5 w-5 text-gray-400 hover:text-green-500 transition-colors" />
+              </a>
             </div>
           </div>
 
