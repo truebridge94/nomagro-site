@@ -165,13 +165,13 @@ export default function About() {
             {[
               {
                 name: "Abubakar Sabiu",
-                role: "CEO & Co-Founder",
+                role: "CEO & Founder",
                 background: "Data Scientist, Machine Learning and Artificial Intelligence Expert",
                 image: "/images/abubakar.jpg"
               },
               {
                 name: "Muhammad Buhari Sabiu",
-                role: "CTO & Co-Founder",
+                role: "CTO",
                 background: "B.Eng Agricultural Engineering, Msc. Environmental Management and Control",
                 image: "/images/buhari.png"
               },
