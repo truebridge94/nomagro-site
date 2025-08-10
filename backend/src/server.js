@@ -33,7 +33,11 @@ const io = new Server(server, {
 });
 
 // Connect to database
-connectDB();
+if (process.env.MONGODB_URI) {
+  connectDB();
+} else {
+  logger.warn('MongoDB URI not provided, running without database');
+}
 
 // Middleware
 app.use(helmet());
@@ -87,7 +91,11 @@ app.get('/health', (req, res) => {
 app.use(errorHandler);
 
 // Start cron jobs
-startCronJobs();
+if (process.env.NODE_ENV !== 'production') {
+  startCronJobs();
+} else {
+  logger.info('Cron jobs disabled in production');
+}
 
 const PORT = process.env.PORT || 5000;
 

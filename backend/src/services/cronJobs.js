@@ -7,6 +7,11 @@ import logger from '../utils/logger.js';
 import axios from 'axios';
 
 export function startCronJobs() {
+  if (process.env.NODE_ENV === 'production') {
+    logger.info('Cron jobs disabled in production environment');
+    return;
+  }
+
   logger.info('Starting cron jobs...');
 
   // Update weather data every hour

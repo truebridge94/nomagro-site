@@ -1,5 +1,73 @@
-import { SimpleLinearRegression, MultivariateLinearRegression } from 'ml-regression';
 import logger from '../../utils/logger.js';
+
+// Simple linear regression implementation
+class SimpleLinearRegression {
+  constructor(x, y) {
+    this.x = x;
+    this.y = y;
+    this.slope = 0;
+    this.intercept = 0;
+    this.train();
+  }
+
+  train() {
+    const n = this.x.length;
+    const sumX = this.x.reduce((a, b) => a + b, 0);
+    const sumY = this.y.reduce((a, b) => a + b, 0);
+    const sumXY = this.x.reduce((sum, x, i) => sum + x * this.y[i], 0);
+    const sumXX = this.x.reduce((sum, x) => sum + x * x, 0);
+
+    this.slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+    this.intercept = (sumY - this.slope * sumX) / n;
+  }
+
+  predict(x) {
+    return this.slope * x + this.intercept;
+  }
+}
+
+// Simple multivariate linear regression implementation
+class MultivariateLinearRegression {
+  constructor(features, targets) {
+    this.features = features;
+    this.targets = targets;
+    this.weights = new Array(features[0].length + 1).fill(0);
+    this.train();
+  }
+
+  train() {
+    // Simple gradient descent implementation
+    const learningRate = 0.01;
+    const iterations = 1000;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      const predictions = this.features.map(feature => this.predictSingle(feature));
+      const errors = predictions.map((pred, i) => pred - this.targets[i]);
+
+      // Update weights
+      for (let j = 0; j < this.weights.length; j++) {
+        let gradient = 0;
+        for (let i = 0; i < this.features.length; i++) {
+          const feature = j === 0 ? 1 : this.features[i][j - 1];
+          gradient += errors[i] * feature;
+        }
+        this.weights[j] -= learningRate * gradient / this.features.length;
+      }
+    }
+  }
+
+  predictSingle(features) {
+    let prediction = this.weights[0]; // bias
+    for (let i = 0; i < features.length; i++) {
+      prediction += this.weights[i + 1] * features[i];
+    }
+    return prediction;
+  }
+
+  predict(features) {
+    return this.predictSingle(features);
+  }
+}
 
 class PricePredictionModel {
   constructor() {

@@ -17,12 +17,24 @@ class MLService {
     try {
       logger.info('Initializing ML Service...');
       
-      // Load all models
-      await Promise.all([
-        this.floodModel.loadModel(),
-        this.droughtModel.loadModel(),
-        this.cropModel.loadModel()
-      ]);
+      // Load all models with error handling
+      try {
+        await this.floodModel.loadModel();
+      } catch (error) {
+        logger.warn('Failed to load flood model, will use fallback');
+      }
+      
+      try {
+        await this.droughtModel.loadModel();
+      } catch (error) {
+        logger.warn('Failed to load drought model, will use fallback');
+      }
+      
+      try {
+        await this.cropModel.loadModel();
+      } catch (error) {
+        logger.warn('Failed to load crop model, will use fallback');
+      }
       
       this.isInitialized = true;
       logger.info('ML Service initialized successfully');

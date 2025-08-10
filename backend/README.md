@@ -59,7 +59,7 @@ A comprehensive AI-powered agriculture backend system for African farmers, provi
 
 1. **Clone the repository**
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/your-username/nomagro-backend.git
    cd backend
    ```
 
@@ -74,19 +74,13 @@ A comprehensive AI-powered agriculture backend system for African farmers, provi
    # Edit .env with your configuration
    ```
 
-4. **Database Setup**
+4. **Database Setup (Optional - for local development)**
    ```bash
    # Make sure MongoDB is running
-   npm run migrate
-   npm run seed
+   # The app will work without MongoDB for basic functionality
    ```
 
-5. **Train ML Models**
-   ```bash
-   npm run train
-   ```
-
-6. **Start the server**
+5. **Start the server**
    ```bash
    # Development
    npm run dev
@@ -95,6 +89,39 @@ A comprehensive AI-powered agriculture backend system for African farmers, provi
    npm start
    ```
 
+## Deployment
+
+### Railway (Recommended)
+1. Fork this repository
+2. Connect your GitHub account to Railway
+3. Create a new project and select your forked repository
+4. Set environment variables in Railway dashboard
+5. Deploy automatically
+
+### Render
+1. Fork this repository
+2. Connect your GitHub account to Render
+3. Create a new Web Service
+4. Set environment variables
+5. Deploy
+
+### Vercel
+1. Install Vercel CLI: `npm i -g vercel`
+2. Run `vercel` in the backend directory
+3. Follow the prompts
+4. Set environment variables in Vercel dashboard
+
+## Environment Variables
+
+Required for production:
+- `NODE_ENV=production`
+- `JWT_SECRET=your-secret-key`
+- `PORT=5000` (or assigned by hosting platform)
+
+Optional:
+- `MONGODB_URI=your-mongodb-connection-string`
+- `OPENWEATHER_API_KEY=your-api-key`
+- `CLIENT_URL=your-frontend-url`
 ## API Endpoints
 
 ### Authentication

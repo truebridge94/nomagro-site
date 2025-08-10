@@ -103,7 +103,8 @@ async function fetchWeatherData(lat, lng, country, region) {
     const apiKey = process.env.OPENWEATHER_API_KEY;
     
     if (!apiKey) {
-      throw new Error('OpenWeather API key not configured');
+      logger.warn('OpenWeather API key not configured, using mock data');
+      return createMockWeatherData(lat, lng, country, region);
     }
     
     // Current weather

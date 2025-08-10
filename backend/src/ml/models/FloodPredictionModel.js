@@ -1,5 +1,4 @@
 import * as tf from '@tensorflow/tfjs-node';
-import { SimpleLinearRegression } from 'ml-regression';
 import logger from '../../utils/logger.js';
 
 class FloodPredictionModel {
