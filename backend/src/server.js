@@ -25,10 +25,13 @@ dotenv.config();
 
 const app = express();
 const server = createServer(app);
+
+// Configure Socket.IO with CORS
 const io = new Server(server, {
   cors: {
     origin: process.env.CLIENT_URL || "http://localhost:3000",
-    methods: ["GET", "POST"]
+    methods: ["GET", "POST"],
+    credentials: true
   }
 });
 
@@ -56,11 +59,11 @@ app.use('/uploads', express.static('uploads'));
 // Socket.IO for real-time updates
 io.on('connection', (socket) => {
   logger.info(`Client connected: ${socket.id}`);
-  
+
   socket.on('join-user-room', (userId) => {
     socket.join(`user-${userId}`);
   });
-  
+
   socket.on('disconnect', () => {
     logger.info(`Client disconnected: ${socket.id}`);
   });
@@ -90,11 +93,12 @@ app.get('/health', (req, res) => {
 // Error handling
 app.use(errorHandler);
 
-// Start cron jobs
-if (process.env.NODE_ENV !== 'production') {
+// Start cron jobs in production
+if (process.env.NODE_ENV === 'production') {
   startCronJobs();
+  logger.info('Cron jobs started in production');
 } else {
-  logger.info('Cron jobs disabled in production');
+  logger.info('Cron jobs disabled in development');
 }
 
 const PORT = process.env.PORT || 5000;
