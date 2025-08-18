@@ -7,7 +7,6 @@ import {
   Gauge,
   CloudSun,
   TrendingUp,
-  TrendingDown,
   AlertTriangle,
   CheckCircle,
   Clock,
@@ -84,12 +83,19 @@ export default function Dashboard() {
         );
 
         if (!response.ok) {
-          const err = await response.json();
-          throw new Error(err.error || 'Failed to load weather data');
+          // Try to parse JSON, fallback to text
+          let message = 'Failed to load weather data';
+          try {
+            const errJson = await response.json();
+            message = errJson.error || message;
+          } catch {
+            const errText = await response.text();
+            message = errText || message;
+          }
+          throw new Error(message);
         }
 
         const data: WeatherResponse = await response.json();
-
         setWeather(data.current);
         setForecast(data.forecast);
       } catch (err) {
