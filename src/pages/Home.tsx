@@ -208,7 +208,7 @@ export default function Home() {
                 to="/signup"
                 className="bg-green-600 text-white px-8 py-4 rounded-lg font-semibold hover:bg-green-700 transition-colors inline-flex items-center justify-center group"
               >
-                Start Free Trial
+                Get Started for Free
                 <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
               </Link>
               <Link
