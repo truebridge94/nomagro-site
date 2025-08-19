@@ -18,10 +18,10 @@ const app = express();
 // ----- CORS (allow your Render frontend + localhost) -----
 const allowedOrigins = [
   process.env.CLIENT_URL,                                  // e.g. https://nomagro-site-frontend.onrender.com
-  "https://nomagro-site-frontend.onrender.com",
-  "https://nomagro-frontend.onrender.com",
+  "https://nomagro.com",
+  "https://nomagro.com",
   "http://localhost:3000",
-].filter(Boolean);
+].filter(Boolean); 
 
 app.use(
   cors({
