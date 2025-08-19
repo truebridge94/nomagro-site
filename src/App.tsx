@@ -8,8 +8,12 @@ import About from './pages/About';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import Blog from './pages/Blog';
+import ResetPassword from './pages/ResetPassword';
 import Marketplace from './pages/Marketplace';
 import Dashboard from './pages/Dashboard';
+import ForgetPassword from './pages/ForgetPassword'; // ✅ Import the new page
+
+
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
@@ -38,6 +42,8 @@ function App() {
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<Signup />} />
               <Route path="/blog" element={<Blog />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/forget-password" element={<ForgetPassword />} /> {/* ✅ Added route */}
               <Route
                 path="/marketplace"
                 element={

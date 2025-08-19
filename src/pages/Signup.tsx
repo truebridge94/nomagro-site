@@ -22,7 +22,7 @@ export default function Signup() {
 
   const countries = [
     'Nigeria', 'Niger', 'Ghana', 'Kenya', 'Tanzania', 'Uganda', 'Ethiopia', 
-    'Senegal', 'Mali', 'Burkina Faso', 'Côte d\'Ivoire', 'Cameroon'
+    'Senegal', 'Mali', 'Burkina Faso', 'Côte d\'Ivoire', 'Cameroon', 'South Africa'
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
