@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -28,7 +29,7 @@ const userSchema = new mongoose.Schema({
     },
     region: {
       type: String,
-      required: [true, 'Region is required']
+      required: [true, 'Region or Stateis required']
     },
     coordinates: {
       lat: { type: Number, required: true },
@@ -73,7 +74,7 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: Date,
   resetPasswordToken: String,
-  resetPasswordExpire: Date
+  resetPasswordExpires: Date
 }, {
   timestamps: true
 });
@@ -83,17 +84,30 @@ userSchema.index({ 'location.coordinates': '2dsphere' });
 
 // Hash password before saving
 userSchema.pre('save', async function(next) {
-  if (!this.isModified('password')) {
-    next();
-  }
-  
+  if (!this.isModified('password')) return next();
+
   const salt = await bcrypt.genSalt(10);
   this.password = await bcrypt.hash(this.password, salt);
+  next();
 });
 
 // Compare password method
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
+};
+
+// Generate password reset token
+userSchema.methods.generatePasswordResetToken = function(expiryMinutes = 15) {
+  const resetToken = crypto.randomBytes(20).toString('hex');
+
+  this.resetPasswordToken = crypto
+    .createHash('sha256')
+    .update(resetToken)
+    .digest('hex');
+
+  this.resetPasswordExpires = Date.now() + expiryMinutes * 60 * 1000; // default 15 minutes
+
+  return resetToken; // raw token to email to user
 };
 
 export default mongoose.model('User', userSchema);
