@@ -217,7 +217,7 @@ export default function Signup() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700">
-                  Region *
+                  State/Region *
                 </label>
                 <input
                   type="text"
