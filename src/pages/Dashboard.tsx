@@ -82,7 +82,7 @@ export default function Dashboard() {
 
       try {
         const response = await fetch(
-          `${API_BASE}/weather?region=${encodeURIComponent(
+          `${API_BASE}/api/weather?region=${encodeURIComponent(
             user.location.region
           )}&country=${encodeURIComponent(user.location.country)}`
         );
