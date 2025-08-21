@@ -11,13 +11,12 @@ import Blog from './pages/Blog';
 import ResetPassword from './pages/ResetPassword';
 import Marketplace from './pages/Marketplace';
 import Dashboard from './pages/Dashboard';
-import ForgetPassword from './pages/ForgetPassword'; // ✅ Import the new page
+import ForgetPassword from './pages/ForgetPassword';
 import AdminDashboard from './pages/AdminDashboard';
-
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth();
-  
+
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -25,17 +24,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
       </div>
     );
   }
-  
+
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
-function App() {
-  return (
-    <Routes>
-      {/* ... other routes */}
-      <Route path="/admin" element={<AdminDashboard />} />
-    </Routes>
-  );
-}
+
+// ✅ Only one App function now
 function App() {
   return (
     <AuthProvider>
@@ -50,7 +43,7 @@ function App() {
               <Route path="/signup" element={<Signup />} />
               <Route path="/blog" element={<Blog />} />
               <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/forget-password" element={<ForgetPassword />} /> {/* ✅ Added route */}
+              <Route path="/forget-password" element={<ForgetPassword />} />
               <Route
                 path="/marketplace"
                 element={
@@ -64,6 +57,14 @@ function App() {
                 element={
                   <ProtectedRoute>
                     <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin"
+                element={
+                  <ProtectedRoute>
+                    <AdminDashboard />
                   </ProtectedRoute>
                 }
               />
