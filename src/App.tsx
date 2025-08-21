@@ -12,7 +12,7 @@ import ResetPassword from './pages/ResetPassword';
 import Marketplace from './pages/Marketplace';
 import Dashboard from './pages/Dashboard';
 import ForgetPassword from './pages/ForgetPassword'; // ✅ Import the new page
-
+import AdminDashboard from './pages/AdminDashboard';
 
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -28,7 +28,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   
   return user ? <>{children}</> : <Navigate to="/login" />;
 }
-
+function App() {
+  return (
+    <Routes>
+      {/* ... other routes */}
+      <Route path="/admin" element={<AdminDashboard />} />
+    </Routes>
+  );
+}
 function App() {
   return (
     <AuthProvider>
