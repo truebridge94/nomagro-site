@@ -1,3 +1,4 @@
+// nomagro-site/src/pages/Dashboard.tsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -14,7 +15,6 @@ import {
   User,
   Calendar,
 } from 'lucide-react';
-import { mockPredictions } from '../data/mockData';
 import { format } from 'date-fns';
 
 // === Interface for Backend Response ===
@@ -36,15 +36,29 @@ interface WeatherResponse {
   }[];
 }
 
+interface Prediction {
+  _id: string;
+  type: string;
+  title: string;
+  description: string;
+  severity: 'high' | 'medium' | 'low';
+  confidence: number;
+  value?: string;
+  icon: string;
+  date: string | Date;
+}
+
 export default function Dashboard() {
   const { user } = useAuth();
   const [weather, setWeather] = useState<WeatherResponse['current'] | null>(null);
   const [forecast, setForecast] = useState<WeatherResponse['forecast']>([]);
+  const [predictions, setPredictions] = useState<Prediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [predLoading, setPredLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const API_BASE =
-    process.env.REACT_APP_API_URL || 'https://api.nomagro.com';
+  // ✅ Clean API base URL
+  const API_BASE = import.meta.env.VITE_API_URL || 'https://api.nomagro.com';
 
   const getSeverityColor = (severity?: string) => {
     switch (severity) {
@@ -71,7 +85,7 @@ export default function Dashboard() {
     return iconMap[iconName] || CheckCircle;
   };
 
-  // === Fetch Weather from Render Backend ===
+  // === Fetch Weather ===
   useEffect(() => {
     const fetchWeather = async () => {
       if (!user?.location?.region || !user?.location?.country) {
@@ -88,7 +102,6 @@ export default function Dashboard() {
         );
 
         if (!response.ok) {
-          // Handle non-200 gracefully
           let message = 'Failed to load weather data';
           try {
             const errJson = await response.json();
@@ -114,10 +127,47 @@ export default function Dashboard() {
     };
 
     fetchWeather();
-  }, [user]);
+  }, [user, API_BASE]);
+
+  // === Fetch AI Predictions ===
+  useEffect(() => {
+    const fetchPredictions = async () => {
+      if (!user?.location?.region || !user?.location?.country) {
+        setPredLoading(false);
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem('token');
+        const response = await fetch(
+          `${API_BASE}/api/predictions?region=${encodeURIComponent(
+            user.location.region
+          )}&country=${encodeURIComponent(user.location.country)}`,
+          {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+            },
+          }
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          setPredictions(data.data || []);
+        } else {
+          console.error('Failed to fetch predictions:', await response.text());
+        }
+      } catch (err) {
+        console.error('Prediction fetch error:', err);
+      } finally {
+        setPredLoading(false);
+      }
+    };
+
+    fetchPredictions();
+  }, [user, API_BASE]);
 
   if (!user) {
-    return <div>Loading...</div>;
+    return <div className="text-center py-8">Loading user...</div>;
   }
 
   return (
@@ -181,6 +231,7 @@ export default function Dashboard() {
                   </p>
                 </div>
                 <div className="text-right">
+                  {/* ✅ Fixed: Removed extra spaces in URL */}
                   <img
                     src={`https://openweathermap.org/img/wn/${weather.icon}@2x.png`}
                     alt="weather"
@@ -239,6 +290,7 @@ export default function Dashboard() {
                   <div className="text-sm font-medium text-gray-900">
                     {day.day}
                   </div>
+                  {/* ✅ Fixed: Removed extra spaces in URL */}
                   <img
                     src={`https://openweathermap.org/img/wn/${day.icon}@2x.png`}
                     alt={day.condition}
@@ -266,72 +318,84 @@ export default function Dashboard() {
             <h2 className="text-2xl font-bold text-gray-900">
               AI Predictions for Your Location
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {mockPredictions.map((prediction, index) => {
-                const IconComponent = getIcon(prediction.icon);
-                return (
-                  <div
-                    key={index}
-                    className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
-                  >
-                    <div className="flex items-start justify-between mb-4">
-                      <div
-                        className={`p-3 rounded-lg ${getSeverityColor(
-                          prediction.severity
-                        )
-                          .replace('text-', 'bg-')
-                          .replace('-600', '-100')}`}
-                      >
-                        <IconComponent
-                          className={`h-6 w-6 ${
-                            getSeverityColor(prediction.severity).split(' ')[0]
-                          }`}
-                        />
-                      </div>
-                      <div className="text-right">
-                        <div className="text-sm text-gray-500">Confidence</div>
-                        <div className="text-lg font-semibold text-green-600">
-                          {prediction.confidence}%
-                        </div>
-                      </div>
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">
-                      {prediction.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      {prediction.description}
-                    </p>
-                    {prediction.value && (
-                      <div className="bg-gray-50 rounded-lg p-3 mb-4">
-                        <div className="text-sm text-gray-600">
-                          Prediction Value
-                        </div>
-                        <div className="text-lg font-semibold text-gray-900">
-                          {prediction.value}
-                        </div>
-                      </div>
-                    )}
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <div className="flex items-center space-x-1">
-                        <Clock className="h-4 w-4" />
-                        <span>
-                          {format(prediction.date, 'MMM dd, yyyy')}
-                        </span>
-                      </div>
-                      {prediction.severity && (
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(
+            {predLoading ? (
+              <div className="text-center py-8">
+                <div className="animate-spin h-8 w-8 rounded-full border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4">Generating AI insights...</p>
+              </div>
+            ) : predictions.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {predictions.map((prediction, index) => {
+                  const IconComponent = getIcon(prediction.icon);
+                  return (
+                    <div
+                      key={index}
+                      className="bg-white rounded-xl shadow-lg p-6 hover:shadow-xl transition-shadow"
+                    >
+                      <div className="flex items-start justify-between mb-4">
+                        <div
+                          className={`p-3 rounded-lg ${getSeverityColor(
                             prediction.severity
-                          )}`}
+                          )
+                            .replace('text-', 'bg-')
+                            .replace('-600', '-100')}`}
                         >
-                          {prediction.severity.toUpperCase()}
-                        </span>
+                          <IconComponent
+                            className={`h-6 w-6 ${
+                              getSeverityColor(prediction.severity).split(' ')[0]
+                            }`}
+                          />
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm text-gray-500">Confidence</div>
+                          <div className="text-lg font-semibold text-green-600">
+                            {prediction.confidence}%
+                          </div>
+                        </div>
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                        {prediction.title}
+                      </h3>
+                      <p className="text-gray-600 mb-4">
+                        {prediction.description}
+                      </p>
+                      {prediction.value && (
+                        <div className="bg-gray-50 rounded-lg p-3 mb-4">
+                          <div className="text-sm text-gray-600">
+                            Prediction Value
+                          </div>
+                          <div className="text-lg font-semibold text-gray-900">
+                            {prediction.value}
+                          </div>
+                        </div>
                       )}
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center space-x-1">
+                          <Clock className="h-4 w-4" />
+                          <span>
+                            {format(new Date(prediction.date), 'MMM dd, yyyy')}
+                          </span>
+                        </div>
+                        {prediction.severity && (
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ${getSeverityColor(
+                              prediction.severity
+                            )}`}
+                          >
+                            {prediction.severity.toUpperCase()}
+                          </span>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500">
+                <AlertTriangle className="h-8 w-8 mx-auto opacity-50" />
+                <p>No predictions available yet. Check back soon!</p>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}

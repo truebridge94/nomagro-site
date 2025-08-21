@@ -1,61 +1,151 @@
+// frontend/src/pages/Signup.tsx
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Sprout, AlertCircle } from 'lucide-react';
+import { Eye, EyeOff, Sprout, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
+// Define form data type
+interface FormData {
+  name: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  country: string;
+  region: string;
+  farmSize: string;
+  crops: string;
+}
+
+// Define validation error type
+type FieldError = string | null;
+
 export default function Signup() {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     email: '',
     password: '',
     confirmPassword: '',
     country: '',
-    state: '',
+    region: '',
     farmSize: '',
     crops: ''
   });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [error, setError] = useState('');
+
+  const [touched, setTouched] = useState<Record<keyof FormData, boolean>>({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+    country: false,
+    region: false,
+    farmSize: false,
+    crops: false
+  });
+
+  const [showPassword, setShowPassword] = useState<boolean>(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState<boolean>(false);
+  const [error, setError] = useState<string>('');
   const { signup, isLoading } = useAuth();
   const navigate = useNavigate();
 
   const countries = [
-    'Nigeria', 'Niger', 'Ghana', 'Kenya', 'Tanzania', 'Uganda', 'Ethiopia', 
+    'Nigeria', 'Niger', 'Ghana', 'Kenya', 'Tanzania', 'Uganda', 'Ethiopia',
     'Senegal', 'Mali', 'Burkina Faso', 'Côte d\'Ivoire', 'Cameroon', 'South Africa'
   ];
 
+  // Validation function
+  const validateField = (name: keyof FormData, value: string): FieldError => {
+    switch (name) {
+      case 'name':
+        if (!value) return 'Name is required';
+        if (value.length < 2) return 'Name must be at least 2 characters';
+        if (value.length > 100) return 'Name cannot exceed 100 characters';
+        return null;
+      case 'email':
+        if (!value) return 'Email is required';
+        if (!/\S+@\S+\.\S+/.test(value)) return 'Email is invalid';
+        return null;
+      case 'password':
+        if (!value) return 'Password is required';
+        if (value.length < 6) return 'Password must be at least 6 characters';
+        return null;
+      case 'confirmPassword':
+        if (value !== formData.password) return 'Passwords do not match';
+        return null;
+      case 'country':
+        if (!value) return 'Country is required';
+        return null;
+      case 'region':
+        if (!value) return 'State/Region is required';
+        return null;
+      case 'farmSize':
+        if (value && (isNaN(Number(value)) || parseFloat(value) < 0))
+          return 'Farm size must be 0 or more';
+        return null;
+      default:
+        return null;
+    }
+  };
+
+  const validateForm = (): { isValid: boolean; errors: Record<keyof FormData, FieldError> } => {
+    const errors = {} as Record<keyof FormData, FieldError>;
+    let isValid = true;
+
+    (Object.keys(formData) as Array<keyof FormData>).forEach((field) => {
+      const error = validateField(field, formData[field]);
+      if (error) {
+        errors[field] = error;
+        isValid = false;
+      }
+    });
+
+    return { isValid, errors };
+  };
+
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name } = e.target;
+    setTouched({ ...touched, [name]: true });
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const allTouched = { ...touched };
+    (Object.keys(allTouched) as Array<keyof FormData>).forEach((key) => {
+      allTouched[key] = true;
+    });
+    setTouched(allTouched);
+
+    const { isValid, errors } = validateForm();
+    if (!isValid) {
+      const firstError = Object.values(errors).find((err) => err !== null);
+      setError(firstError || 'Please fix the errors above');
+      return;
+    }
+
     setError('');
-
-    if (!formData.name || !formData.email || !formData.password || !formData.country || !formData.region) {
-      setError('Please fill in all required fields');
-      return;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters long');
-      return;
-    }
 
     try {
       const userData = {
         name: formData.name,
         email: formData.email,
+        password: formData.password,
         location: {
           country: formData.country,
           region: formData.region,
-          coordinates: { lat: 0, lng: 0 } // In a real app, you'd geocode this
+          coordinates: { lat: 0, lng: 0 } // In production, geocode this
         },
         farmSize: formData.farmSize ? parseFloat(formData.farmSize) : undefined,
-        crops: formData.crops ? formData.crops.split(',').map(crop => crop.trim()) : undefined,
-        password: formData.password
+        crops: formData.crops
+          ? formData.crops
+              .split(',')
+              .map((crop) => crop.trim())
+              .filter(Boolean)
+          : undefined
       };
 
       const success = await signup(userData);
@@ -69,11 +159,12 @@ export default function Signup() {
     }
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
+  const getFieldError = (fieldName: keyof FormData): FieldError => {
+    return touched[fieldName] ? validateField(fieldName, formData[fieldName]) : null;
+  };
+
+  const isFieldValid = (fieldName: keyof FormData): boolean => {
+    return touched[fieldName] && !getFieldError(fieldName);
   };
 
   return (
@@ -110,36 +201,67 @@ export default function Signup() {
               </div>
             )}
 
+            {/* Name */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Full Name *
               </label>
-              <input
-                type="text"
-                name="name"
-                required
-                value={formData.name}
-                onChange={handleChange}
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter your full name"
-              />
+              <div className="mt-1 relative">
+                <input
+                  type="text"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 ${
+                    isFieldValid('name')
+                      ? 'border-green-500'
+                      : touched.name && getFieldError('name')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your full name"
+                />
+                {isFieldValid('name') && (
+                  <Check className="h-5 w-5 text-green-500 absolute right-3 top-2" />
+                )}
+              </div>
+              {touched.name && getFieldError('name') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('name')}</p>
+              )}
             </div>
 
+            {/* Email */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Email Address *
               </label>
-              <input
-                type="email"
-                name="email"
-                required
-                value={formData.email}
-                onChange={handleChange}
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
-                placeholder="Enter your email"
-              />
+              <div className="mt-1 relative">
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 ${
+                    isFieldValid('email')
+                      ? 'border-green-500'
+                      : touched.email && getFieldError('email')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
+                  placeholder="Enter your email"
+                />
+                {isFieldValid('email') && (
+                  <Check className="h-5 w-5 text-green-500 absolute right-3 top-2" />
+                )}
+              </div>
+              {touched.email && getFieldError('email') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('email')}</p>
+              )}
             </div>
 
+            {/* Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Password *
@@ -148,10 +270,16 @@ export default function Signup() {
                 <input
                   type={showPassword ? 'text' : 'password'}
                   name="password"
-                  required
                   value={formData.password}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 pr-10"
+                  onBlur={handleBlur}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 pr-10 ${
+                    isFieldValid('password')
+                      ? 'border-green-500'
+                      : touched.password && getFieldError('password')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Create a password"
                 />
                 <button
@@ -166,8 +294,12 @@ export default function Signup() {
                   )}
                 </button>
               </div>
+              {touched.password && getFieldError('password') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('password')}</p>
+              )}
             </div>
 
+            {/* Confirm Password */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Confirm Password *
@@ -176,10 +308,16 @@ export default function Signup() {
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   name="confirmPassword"
-                  required
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 pr-10"
+                  onBlur={handleBlur}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 pr-10 ${
+                    isFieldValid('confirmPassword')
+                      ? 'border-green-500'
+                      : touched.confirmPassword && getFieldError('confirmPassword')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
                   placeholder="Confirm your password"
                 />
                 <button
@@ -194,8 +332,12 @@ export default function Signup() {
                   )}
                 </button>
               </div>
+              {touched.confirmPassword && getFieldError('confirmPassword') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('confirmPassword')}</p>
+              )}
             </div>
 
+            {/* Country & Region */}
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700">
@@ -203,16 +345,27 @@ export default function Signup() {
                 </label>
                 <select
                   name="country"
-                  required
                   value={formData.country}
                   onChange={handleChange}
-                  className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  onBlur={handleBlur}
+                  className={`mt-1 block w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-green-500 focus:border-green-500 ${
+                    isFieldValid('country')
+                      ? 'border-green-500'
+                      : touched.country && getFieldError('country')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
                 >
                   <option value="">Select country</option>
-                  {countries.map(country => (
-                    <option key={country} value={country}>{country}</option>
+                  {countries.map((country) => (
+                    <option key={country} value={country}>
+                      {country}
+                    </option>
                   ))}
                 </select>
+                {touched.country && getFieldError('country') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('country')}</p>
+                )}
               </div>
 
               <div>
@@ -222,15 +375,25 @@ export default function Signup() {
                 <input
                   type="text"
                   name="region"
-                  required
                   value={formData.region}
                   onChange={handleChange}
-                  className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                  onBlur={handleBlur}
+                  className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 ${
+                    isFieldValid('region')
+                      ? 'border-green-500'
+                      : touched.region && getFieldError('region')
+                      ? 'border-red-300'
+                      : 'border-gray-300'
+                  }`}
                   placeholder="e.g. Ashanti"
                 />
+                {touched.region && getFieldError('region') && (
+                  <p className="mt-1 text-sm text-red-600">{getFieldError('region')}</p>
+                )}
               </div>
             </div>
 
+            {/* Farm Size */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Farm Size (hectares)
@@ -241,11 +404,22 @@ export default function Signup() {
                 step="0.1"
                 value={formData.farmSize}
                 onChange={handleChange}
-                className="mt-1 appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500"
+                onBlur={handleBlur}
+                className={`mt-1 appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 ${
+                  isFieldValid('farmSize')
+                    ? 'border-green-500'
+                    : touched.farmSize && getFieldError('farmSize')
+                    ? 'border-red-300'
+                    : 'border-gray-300'
+                }`}
                 placeholder="e.g. 2.5"
               />
+              {touched.farmSize && getFieldError('farmSize') && (
+                <p className="mt-1 text-sm text-red-600">{getFieldError('farmSize')}</p>
+              )}
             </div>
 
+            {/* Crops */}
             <div>
               <label className="block text-sm font-medium text-gray-700">
                 Main Crops (comma-separated)

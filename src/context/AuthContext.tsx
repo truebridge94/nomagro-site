@@ -1,5 +1,9 @@
+// frontend/src/context/AuthContext.tsx
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { User } from '../types';
+
+// Define API base URL
+const API_BASE = import.meta.env.REACT_APP_API_URL || 'https://api.nomagro.com';
 
 interface AuthContextType {
   user: User | null;
@@ -11,77 +15,95 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// Mock user data
-const mockUsers: (User & { password: string })[] = [
-  {
-    id: '1',
-    name: 'Kwame Asante',
-    email: 'kwame@example.com',
-    password: 'password123',
-    location: {
-      country: 'Ghana',
-      region: 'Ashanti Region',
-      coordinates: { lat: 6.6885, lng: -1.6244 }
-    },
-    farmSize: 5.2,
-    crops: ['cocoa', 'cassava', 'maize']
-  }
-];
-
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Check for stored user session on load
   useEffect(() => {
-    // Check for stored user session
     const storedUser = localStorage.getItem('nomagro_user');
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (e) {
+        localStorage.removeItem('nomagro_user');
+      }
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const foundUser = mockUsers.find(u => u.email === email && u.password === password);
-    
-    if (foundUser) {
-      const { password: _, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('nomagro_user', JSON.stringify(userWithoutPassword));
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+        credentials: 'include', // Only if using cookies
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Save token and user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('nomagro_user', JSON.stringify(data));
+        setUser(data);
+        
+        setIsLoading(false);
+        return true;
+      } else {
+        const error = await response.json();
+        console.error('Login error:', error.message);
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
+      console.error('Network error during login:', err);
       setIsLoading(false);
-      return true;
+      return false;
     }
-    
-    setIsLoading(false);
-    return false;
   };
 
   const signup = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
     setIsLoading(true);
-    
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    const newUser = {
-      ...userData,
-      id: Date.now().toString(),
-    };
-    
-    mockUsers.push(newUser);
-    const { password: _, ...userWithoutPassword } = newUser;
-    setUser(userWithoutPassword);
-    localStorage.setItem('nomagro_user', JSON.stringify(userWithoutPassword));
-    setIsLoading(false);
-    return true;
+    try {
+      const response = await fetch(`${API_BASE}/api/auth/register`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(userData),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Save token and user
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('nomagro_user', JSON.stringify(data));
+        setUser(data);
+        
+        setIsLoading(false);
+        return true;
+      } else {
+        const error = await response.json();
+        console.error('Signup error:', error.message);
+        setIsLoading(false);
+        return false;
+      }
+    } catch (err) {
+      console.error('Network error during signup:', err);
+      setIsLoading(false);
+      return false;
+    }
   };
 
   const logout = () => {
     setUser(null);
+    localStorage.removeItem('token');
     localStorage.removeItem('nomagro_user');
   };
 
