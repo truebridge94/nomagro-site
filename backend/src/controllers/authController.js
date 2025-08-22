@@ -97,21 +97,43 @@ exports.loginUser = async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
 
+    // ✅ Add early validation
+    if (!emailOrPhone || !password) {
+      return res.status(400).json({ 
+        msg: 'Email/phone and password are required' 
+      });
+    }
+
+    // ✅ Normalize input
+    const identifier = emailOrPhone.trim().toLowerCase();
+
+    // ✅ Find user by email or phone
     const user = await User.findOne({
-      $or: [{ email: emailOrPhone }, { phone: emailOrPhone }],
+      $or: [
+        { email: identifier },
+        { phone: identifier }
+      ]
     });
 
     if (!user) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
+    // ✅ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
+    // ✅ Validate JWT_SECRET
+    if (!process.env.JWT_SECRET) {
+      throw new Error('JWT_SECRET is not configured');
+    }
+
+    // ✅ Generate token
     const token = generateToken(user._id);
 
+    // ✅ Send response
     res.json({
       token,
       user: {
@@ -127,52 +149,11 @@ exports.loginUser = async (req, res) => {
       },
     });
   } catch (err) {
-    logger.error(err.message);
+    // ✅ Log full error
+    logger.error('Login error:', err);
     res.status(500).json({ msg: 'Server error' });
   }
 };
-
-// @desc    Get current logged-in user
-// @route   GET /api/auth/me
-exports.getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user.id).select('-password');
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-
-    res.json(user);
-  } catch (err) {
-    logger.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
-// @desc    Update profile
-// @route   PUT /api/auth/profile
-exports.updateProfile = async (req, res) => {
-  try {
-    const { name, age, country, region, preferredLanguage, email, phone, farmSize, crops } = req.body;
-
-    const location = {
-      country,
-      region,
-      coordinates: { lat: 0, lng: 0 }
-    };
-
-    const updatedUser = await User.findByIdAndUpdate(
-      req.user.id,
-      { name, age, location, preferredLanguage, email, phone, farmSize, crops },
-      { new: true, runValidators: true }
-    ).select('-password');
-
-    if (!updatedUser) return res.status(404).json({ msg: 'User not found' });
-
-    res.json(updatedUser);
-  } catch (err) {
-    logger.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
-  }
-};
-
 // @desc    Change password
 // @route   PUT /api/auth/password
 exports.changePassword = async (req, res) => {
