@@ -12,16 +12,34 @@ const userSchema = new mongoose.Schema({
   },
   email: {
     type: String,
-    required: [true, 'Email is required'],
     unique: true,
+    sparse: true, // allow multiple docs without email
     lowercase: true,
-    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+    match: [
+      /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/,
+      'Please enter a valid email'
+    ]
+  },
+  phone: {
+    type: String,
+    unique: true,
+    sparse: true,
+    match: [/^\+?[0-9]{7,15}$/, 'Please enter a valid phone number']
   },
   password: {
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters'],
     select: false // Never return password in queries
+  },
+  age: {
+    type: Number,
+    required: [true, 'Age is required'],
+    min: [1, 'Age must be a positive number']
+  },
+  preferredLanguage: {
+    type: String,
+    required: [true, 'Preferred language is required']
   },
   location: {
     country: {
@@ -41,10 +59,12 @@ const userSchema = new mongoose.Schema({
     type: Number,
     min: [0, 'Farm size cannot be negative']
   },
-  crops: [{
-    type: String,
-    trim: true
-  }],
+  crops: [
+    {
+      type: String,
+      trim: true
+    }
+  ],
   role: {
     type: String,
     enum: ['farmer', 'buyer', 'admin'],
@@ -78,6 +98,15 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: Date
 }, {
   timestamps: true
+});
+
+// ✅ Ensure at least email or phone is provided
+userSchema.pre('validate', function(next) {
+  if (!this.email && !this.phone) {
+    this.invalidate('email', 'Either email or phone is required');
+    this.invalidate('phone', 'Either email or phone is required');
+  }
+  next();
 });
 
 // ✅ Index for geospatial queries

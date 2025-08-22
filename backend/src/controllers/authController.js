@@ -2,215 +2,221 @@
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const sendEmail = require('../utils/email');
+const logger = require('../utils/logger');
+const sendEmail = require('../utils/sendEmail'); // utility function for sending emails
+const crypto = require('crypto');
 
-/**
- * Generate JWT token
- */
-const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET, {
-    expiresIn: '30d',
+// Helper: generate JWT
+const generateToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
+    expiresIn: '7d',
   });
 };
 
-/**
- * Register new user
- */
-const register = async (req, res) => {
+// @desc    Register user
+// @route   POST /api/auth/register
+exports.register = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { fullName, age, farmLocation, preferredLanguage, email, phone, password } = req.body;
 
-    const userExists = await User.findOne({ email });
-    if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+    // check if user already exists
+    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    if (existingUser) {
+      return res.status(400).json({ msg: 'User with this email or phone already exists' });
     }
 
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
-      name,
+      fullName,
+      age,
+      farmLocation,
+      preferredLanguage,
       email,
+      phone,
       password: hashedPassword,
     });
 
-    if (user) {
-      res.status(201).json({
-        _id: user._id,
-        name: user.name,
+    const token = generateToken(user._id);
+
+    res.status(201).json({
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        age: user.age,
+        farmLocation: user.farmLocation,
+        preferredLanguage: user.preferredLanguage,
         email: user.email,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid user data' });
-    }
-  } catch (error) {
-    console.error('Register error:', error);
-    res.status(500).json({ message: 'Server error' });
+        phone: user.phone,
+      },
+    });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
-/**
- * Login user
- */
-const login = async (req, res) => {
+// @desc    Login user
+// @route   POST /api/auth/login
+exports.login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrPhone, password } = req.body;
 
-    const user = await User.findOne({ email });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      res.json({
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        token: generateToken(user._id),
-      });
-    } else {
-      res.status(400).json({ message: 'Invalid credentials' });
-    }
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-/**
- * Get logged in user profile
- */
-const getMe = async (req, res) => {
-  try {
-    const user = await User.findById(req.user._id).select('-password');
-    res.json(user);
-  } catch (error) {
-    console.error('GetMe error:', error);
-    res.status(500).json({ message: 'Server error' });
-  }
-};
-
-/**
- * Update profile
- */
-const updateProfile = async (req, res) => {
-  try {
-    const updates = req.body;
-    const user = await User.findByIdAndUpdate(req.user._id, updates, {
-      new: true,
-      runValidators: true,
-    }).select('-password');
+    const user = await User.findOne({
+      $or: [{ email: emailOrPhone }, { phone: emailOrPhone }],
+    });
 
     if (!user) {
-      return res.status(404).json({ message: 'User not found' });
+      return res.status(400).json({ msg: 'Invalid credentials' });
     }
 
-    res.json(user);
-  } catch (error) {
-    console.error('UpdateProfile error:', error);
-    res.status(500).json({ message: 'Server error' });
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ msg: 'Invalid credentials' });
+    }
+
+    const token = generateToken(user._id);
+
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        fullName: user.fullName,
+        age: user.age,
+        farmLocation: user.farmLocation,
+        preferredLanguage: user.preferredLanguage,
+        email: user.email,
+        phone: user.phone,
+      },
+    });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
-/**
- * Change password
- */
-const changePassword = async (req, res) => {
+// @desc    Get current logged-in user
+// @route   GET /api/auth/me
+exports.getMe = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).select('-password');
+    res.json(user);
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Update profile
+// @route   PUT /api/auth/profile
+exports.updateProfile = async (req, res) => {
+  try {
+    const { fullName, age, farmLocation, preferredLanguage, email, phone } = req.body;
+
+    const updatedUser = await User.findByIdAndUpdate(
+      req.user.id,
+      { fullName, age, farmLocation, preferredLanguage, email, phone },
+      { new: true }
+    ).select('-password');
+
+    res.json(updatedUser);
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Change password
+// @route   PUT /api/auth/password
+exports.changePassword = async (req, res) => {
   try {
     const { oldPassword, newPassword } = req.body;
 
-    const user = await User.findById(req.user._id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
     const isMatch = await bcrypt.compare(oldPassword, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Old password is incorrect' });
-    }
+    if (!isMatch) return res.status(400).json({ msg: 'Old password is incorrect' });
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    user.password = await bcrypt.hash(newPassword, 10);
     await user.save();
 
-    res.json({ message: 'Password updated successfully' });
-  } catch (error) {
-    console.error('ChangePassword error:', error);
-    res.status(500).json({ message: 'Server error' });
+    res.json({ msg: 'Password updated successfully' });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
-/**
- * Logout
- */
-const logout = async (req, res) => {
+// @desc    Logout user
+// @route   POST /api/auth/logout
+exports.logout = async (req, res) => {
   try {
-    res.json({ message: 'Logged out successfully' });
-  } catch (error) {
-    console.error('Logout error:', error);
-    res.status(500).json({ message: 'Server error' });
+    // In JWT, logout is handled on the client side (delete token)
+    res.json({ msg: 'Logged out successfully (client should clear token)' });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
-/**
- * Forgot Password
- */
-const forgotPassword = async (req, res) => {
+// @desc    Forgot password
+// @route   POST /api/auth/forgot-password
+exports.forgotPassword = async (req, res) => {
   try {
     const { email } = req.body;
+
     const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    const resetToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
-      expiresIn: '1h',
-    });
+    // generate reset token
+    const resetToken = crypto.randomBytes(20).toString('hex');
+    const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
-    const resetUrl = `${process.env.CLIENT_URL}/reset-password/${resetToken}`;
+    user.resetPasswordToken = resetTokenHash;
+    user.resetPasswordExpire = Date.now() + 10 * 60 * 1000; // 10 mins
+    await user.save();
+
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
+    const message = `You requested a password reset. Please make a PUT request to: \n\n ${resetUrl}`;
 
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset Request',
-      text: `You requested a password reset. Click here to reset: ${resetUrl}`,
+      subject: 'Password Reset',
+      text: message,
     });
 
-    res.json({ message: 'Password reset email sent' });
-  } catch (error) {
-    console.error('ForgotPassword error:', error);
-    res.status(500).json({ message: 'Email could not be sent' });
+    res.json({ msg: 'Password reset email sent' });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
 };
 
-/**
- * Reset Password
- */
-const resetPassword = async (req, res) => {
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+exports.resetPassword = async (req, res) => {
   try {
-    const { token, newPassword } = req.body;
+    const resetTokenHash = crypto.createHash('sha256').update(req.body.token).digest('hex');
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const user = await User.findById(decoded.id);
-    if (!user) {
-      return res.status(404).json({ message: 'User not found' });
-    }
+    const user = await User.findOne({
+      resetPasswordToken: resetTokenHash,
+      resetPasswordExpire: { $gt: Date.now() },
+    });
 
-    const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(newPassword, salt);
+    if (!user) return res.status(400).json({ msg: 'Invalid or expired token' });
+
+    user.password = await bcrypt.hash(req.body.password, 10);
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+
     await user.save();
 
-    res.json({ message: 'Password reset successful' });
-  } catch (error) {
-    console.error('ResetPassword error:', error);
-    res.status(400).json({ message: 'Invalid or expired token' });
+    res.json({ msg: 'Password reset successful' });
+  } catch (err) {
+    logger.error(err.message);
+    res.status(500).json({ msg: 'Server error' });
   }
-};
-
-// ✅ Export all functions using CommonJS
-module.exports = {
-  register,
-  login,
-  getMe,
-  updateProfile,
-  changePassword,
-  logout,
-  forgotPassword,
-  resetPassword
 };
