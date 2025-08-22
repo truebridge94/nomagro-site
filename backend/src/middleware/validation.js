@@ -59,23 +59,22 @@ const validateRegister = [
   handleValidationErrors,
 ];
 
-// ✅ Login validation (email OR phone + password)
+// ✅ Login validation (emailOrPhone + password)
 const validateLogin = [
-  body().custom((_, { req }) => {
-    if (!req.body.email && !req.body.phone) {
-      throw new Error('Either email or phone is required');
-    }
+  body('emailOrPhone')
+    .notEmpty()
+    .withMessage('Email or phone is required')
+    .custom((value, { req }) => {
+      // Check if it's a valid email OR valid phone
+      const isEmail = /\S+@\S+\.\S+/.test(value);
+      const isPhone = /^\+?\d{7,15}$/.test(value);
 
-    if (req.body.email && !/\S+@\S+\.\S+/.test(req.body.email)) {
-      throw new Error('Valid email is required');
-    }
+      if (!isEmail && !isPhone) {
+        throw new Error('Must be a valid email or phone number');
+      }
 
-    if (req.body.phone && !/^\+?\d{7,15}$/.test(req.body.phone)) {
-      throw new Error('Valid phone number is required');
-    }
-
-    return true;
-  }),
+      return true;
+    }),
 
   body('password')
     .notEmpty()
