@@ -1,5 +1,5 @@
 // backend/src/controllers/weatherController.js
-const axios = require('axios');  // ✅ require instead of import
+const axios = require('axios');
 
 /**
  * GET /api/weather?region=Kano&country=Nigeria
@@ -42,13 +42,13 @@ const getWeather = async (req, res) => {
     const { lat, lon, name: cityName } = geo[0];
 
     // 2) Current weather
-    // ❌ Remove extra spaces in URL
+    // ✅ Fixed: No extra spaces
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const currentRes = await axios.get(currentUrl);
     const currentData = currentRes.data;
 
     // 3) 5-day / 3-hour forecast
-    // ❌ Remove extra spaces in URL
+    // ✅ Fixed: No extra spaces
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const forecastRes = await axios.get(forecastUrl);
     const forecastData = forecastRes.data;

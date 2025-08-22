@@ -1,4 +1,4 @@
-// backend/src/routes/prediction.js
+// backend/src/routes/predictions.js
 const express = require('express');
 const auth = require('../middleware/auth');
 const mlService = require('../ml/MLService');
