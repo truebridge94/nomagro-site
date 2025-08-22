@@ -3,14 +3,31 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { User } from '../types';
 
 // Define API base URL
-const API_BASE = import.meta.env.REACT_APP_API_URL || 'https://api.nomagro.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'https://api.nomagro.com';
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (userData: Omit<User, 'id'> & { password: string }) => Promise<boolean>;
+  login: (identifier: string, password: string) => Promise<boolean>;
+  signup: (userData: SignupPayload) => Promise<boolean>;
   logout: () => void;
   isLoading: boolean;
+}
+
+// ✅ Signup payload interface
+export interface SignupPayload {
+  name: string;
+  email?: string;
+  phone?: string;
+  password: string;
+  age: number;
+  preferredLanguage: string;
+  location: {
+    country: string;
+    region: string;
+    coordinates?: { lat: number; lng: number };
+  };
+  farmSize?: number;
+  crops?: string[];
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -19,47 +36,51 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check for stored user session on load
+  // ✅ Load stored user session
   useEffect(() => {
     const storedUser = localStorage.getItem('nomagro_user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
-      } catch (e) {
+      } catch {
         localStorage.removeItem('nomagro_user');
       }
     }
     setIsLoading(false);
   }, []);
 
-  const login = async (email: string, password: string): Promise<boolean> => {
+  // ✅ Login with email OR phone
+  const login = async (identifier: string, password: string): Promise<boolean> => {
     setIsLoading(true);
     try {
+      const body: Record<string, string> = { password };
+      if (/^\+?\d{7,15}$/.test(identifier)) {
+        body.phone = identifier;
+      } else {
+        body.email = identifier;
+      }
+
       const response = await fetch(`${API_BASE}/api/auth/login`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-        credentials: 'include', // Only if using cookies
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+        credentials: 'include',
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Save token and user
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('nomagro_user', JSON.stringify(data));
-        setUser(data);
-        
-        setIsLoading(false);
-        return true;
-      } else {
+      if (!response.ok) {
         const error = await response.json();
-        console.error('Login error:', error.message);
+        console.error('Login error:', error.message || error);
         setIsLoading(false);
         return false;
       }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('nomagro_user', JSON.stringify(data));
+      setUser(data);
+
+      setIsLoading(false);
+      return true;
     } catch (err) {
       console.error('Network error during login:', err);
       setIsLoading(false);
@@ -67,33 +88,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signup = async (userData: Omit<User, 'id'> & { password: string }): Promise<boolean> => {
+  // ✅ Signup supports phone OR email and extra fields
+  const signup = async (userData: SignupPayload): Promise<boolean> => {
     setIsLoading(true);
     try {
       const response = await fetch(`${API_BASE}/api/auth/register`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData),
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        
-        // Save token and user
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('nomagro_user', JSON.stringify(data));
-        setUser(data);
-        
-        setIsLoading(false);
-        return true;
-      } else {
+      if (!response.ok) {
         const error = await response.json();
-        console.error('Signup error:', error.message);
+        console.error('Signup error:', error.message || error);
         setIsLoading(false);
         return false;
       }
+
+      const data = await response.json();
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('nomagro_user', JSON.stringify(data));
+      setUser(data);
+
+      setIsLoading(false);
+      return true;
     } catch (err) {
       console.error('Network error during signup:', err);
       setIsLoading(false);
@@ -116,7 +134,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;

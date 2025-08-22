@@ -5,19 +5,24 @@ import { Eye, EyeOff, Sprout, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 export default function Login() {
-  const [email, setEmail] = useState<string>('');
+  const [identifier, setIdentifier] = useState<string>(''); // ✅ email OR phone
   const [password, setPassword] = useState<string>('');
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
-  const [touched, setTouched] = useState({ email: false, password: false });
+  const [touched, setTouched] = useState({ identifier: false, password: false });
   const { login, isLoading } = useAuth();
   const navigate = useNavigate();
 
+  // ✅ Validate identifier as email OR phone
   const validateField = (name: string, value: string): string | null => {
     switch (name) {
-      case 'email':
-        if (!value) return 'Email is required';
-        if (!/\S+@\S+\.\S+/.test(value)) return 'Email is invalid';
+      case 'identifier':
+        if (!value) return 'Email or phone is required';
+        if (value.includes('@')) {
+          if (!/\S+@\S+\.\S+/.test(value)) return 'Email is invalid';
+        } else {
+          if (!/^\+?\d{7,15}$/.test(value)) return 'Phone number is invalid';
+        }
         return null;
       case 'password':
         if (!value) return 'Password is required';
@@ -28,40 +33,40 @@ export default function Login() {
     }
   };
 
-  const handleBlur = (field: 'email' | 'password') => {
+  const handleBlur = (field: 'identifier' | 'password') => {
     setTouched({ ...touched, [field]: true });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setTouched({ email: true, password: true });
+    setTouched({ identifier: true, password: true });
 
-    const emailError = validateField('email', email);
+    const identifierError = validateField('identifier', identifier);
     const passwordError = validateField('password', password);
 
-    if (emailError || passwordError) {
-      setError(emailError || passwordError);
+    if (identifierError || passwordError) {
+      setError(identifierError || passwordError);
       return;
     }
 
     setError('');
 
     try {
-      const success = await login(email, password);
+      const success = await login(identifier, password);
       if (success) {
         navigate('/dashboard');
       } else {
-        setError('Invalid email or password. Please check your credentials and try again.');
+        setError('Invalid credentials. Please check and try again.');
       }
     } catch (err) {
-      setError('Unable to connect to server. Please check your internet connection and try again.');
+      setError('Unable to connect to server. Please try again later.');
       console.error('Login error:', err);
     }
   };
 
-  const emailError = touched.email && validateField('email', email);
+  const identifierError = touched.identifier && validateField('identifier', identifier);
   const passwordError = touched.password && validateField('password', password);
-  const isEmailValid = touched.email && !emailError;
+  const isIdentifierValid = touched.identifier && !identifierError;
   const isPasswordValid = touched.password && !passwordError;
 
   return (
@@ -96,30 +101,30 @@ export default function Login() {
               </div>
             )}
 
-            {/* Email */}
+            {/* Email or Phone */}
             <div>
-              <label className="block text-sm font-medium text-gray-700">Email address</label>
+              <label className="block text-sm font-medium text-gray-700">Email or Phone</label>
               <div className="mt-1 relative">
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onBlur={() => handleBlur('email')}
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  onBlur={() => handleBlur('identifier')}
                   className={`appearance-none block w-full px-3 py-2 border rounded-md placeholder-gray-400 focus:outline-none focus:ring-green-500 focus:border-green-500 ${
-                    isEmailValid
+                    isIdentifierValid
                       ? 'border-green-500'
-                      : touched.email && emailError
+                      : touched.identifier && identifierError
                       ? 'border-red-300'
                       : 'border-gray-300'
                   }`}
-                  placeholder="Enter your email"
+                  placeholder="Enter your email or phone"
                 />
-                {isEmailValid && (
+                {isIdentifierValid && (
                   <Check className="h-5 w-5 text-green-500 absolute right-3 top-2" />
                 )}
               </div>
-              {touched.email && emailError && (
-                <p className="mt-1 text-sm text-red-600">{emailError}</p>
+              {touched.identifier && identifierError && (
+                <p className="mt-1 text-sm text-red-600">{identifierError}</p>
               )}
             </div>
 
