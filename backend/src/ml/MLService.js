@@ -1,8 +1,9 @@
-import FloodPredictionModel from './models/FloodPredictionModel.js';
-import DroughtPredictionModel from './models/DroughtPredictionModel.js';
-import CropRecommendationModel from './models/CropRecommendationModel.js';
-import PricePredictionModel from './models/PricePredictionModel.js';
-import logger from '../utils/logger.js';
+// backend/src/ml/MLService.js
+const FloodPredictionModel = require('./models/FloodPredictionModel');
+const DroughtPredictionModel = require('./models/DroughtPredictionModel');
+const CropRecommendationModel = require('./models/CropRecommendationModel');
+const PricePredictionModel = require('./models/PricePredictionModel');
+const logger = require('../utils/logger');
 
 class MLService {
   constructor() {
@@ -287,4 +288,5 @@ class MLService {
 // Singleton instance
 const mlService = new MLService();
 
-export default mlService;
+// Export using CommonJS
+module.exports = mlService;

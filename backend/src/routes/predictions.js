@@ -1,9 +1,10 @@
-import express from 'express';
-import auth from '../middleware/auth.js';
-import mlService from '../ml/MLService.js';
-import Prediction from '../models/Prediction.js';
-import WeatherData from '../models/WeatherData.js';
-import logger from '../utils/logger.js';
+// backend/src/routes/prediction.js
+const express = require('express');
+const auth = require('../middleware/auth');
+const mlService = require('../ml/MLService');
+const Prediction = require('../models/Prediction');
+const WeatherData = require('../models/WeatherData');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -11,7 +12,7 @@ const router = express.Router();
 router.get('/', auth, async (req, res) => {
   try {
     const { country, region } = req.user.location;
-    
+
     // Get recent predictions for user's location
     const predictions = await Prediction.find({
       'location.country': country,
@@ -19,7 +20,7 @@ router.get('/', auth, async (req, res) => {
       status: 'active',
       'timeframe.endDate': { $gte: new Date() }
     }).sort({ createdAt: -1 }).limit(10);
-    
+
     res.json({
       success: true,
       data: predictions
@@ -37,25 +38,25 @@ router.get('/', auth, async (req, res) => {
 router.post('/flood', auth, async (req, res) => {
   try {
     const { location } = req.user;
-    
+
     // Get latest weather data for the location
     const weatherData = await WeatherData.findOne({
       'location.country': location.country,
       'location.region': location.region
     }).sort({ lastUpdated: -1 });
-    
+
     if (!weatherData) {
       return res.status(400).json({
         success: false,
         message: 'No weather data available for your location'
       });
     }
-    
+
     // Prepare input data for ML model
     const inputData = {
       rainfall24h: weatherData.current.rainfall,
       rainfall7d: weatherData.forecast.slice(0, 7).reduce((sum, day) => sum + day.rainfall, 0),
-      rainfall30d: req.body.rainfall30d || 100, // Would come from historical data
+      rainfall30d: req.body.rainfall30d || 100,
       temperature: weatherData.current.temperature,
       humidity: weatherData.current.humidity,
       pressure: weatherData.current.pressure,
@@ -67,10 +68,10 @@ router.post('/flood', auth, async (req, res) => {
       ndvi: req.body.ndvi || 0.6,
       landCover: req.body.landCover || 3
     };
-    
+
     // Get prediction from ML service
     const mlPrediction = await mlService.predictFlood(inputData);
-    
+
     // Save prediction to database
     const prediction = new Prediction({
       type: 'flood',
@@ -84,13 +85,15 @@ router.post('/flood', auth, async (req, res) => {
       modelInfo: mlPrediction.modelInfo,
       inputData: inputData
     });
-    
+
     await prediction.save();
-    
+
     // Emit real-time update
     const io = req.app.get('io');
-    io.to(`user-${req.user._id}`).emit('new-prediction', prediction);
-    
+    if (io) {
+      io.to(`user-${req.user._id}`).emit('new-prediction', prediction);
+    }
+
     res.json({
       success: true,
       data: prediction
@@ -108,7 +111,7 @@ router.post('/flood', auth, async (req, res) => {
 router.post('/drought', auth, async (req, res) => {
   try {
     const { location } = req.user;
-    
+
     const inputData = {
       temperatureAvg: req.body.temperatureAvg || 25,
       temperatureMax: req.body.temperatureMax || 35,
@@ -125,9 +128,9 @@ router.post('/drought', auth, async (req, res) => {
       season: req.body.season || 1,
       elevation: req.body.elevation || 300
     };
-    
+
     const mlPrediction = await mlService.predictDrought(inputData);
-    
+
     const prediction = new Prediction({
       type: 'drought',
       location: location,
@@ -140,12 +143,14 @@ router.post('/drought', auth, async (req, res) => {
       modelInfo: mlPrediction.modelInfo,
       inputData: inputData
     });
-    
+
     await prediction.save();
-    
+
     const io = req.app.get('io');
-    io.to(`user-${req.user._id}`).emit('new-prediction', prediction);
-    
+    if (io) {
+      io.to(`user-${req.user._id}`).emit('new-prediction', prediction);
+    }
+
     res.json({
       success: true,
       data: prediction
@@ -176,9 +181,9 @@ router.post('/crops', auth, async (req, res) => {
       season: req.body.season || 1,
       marketTrend: req.body.marketTrend || 0.1
     };
-    
+
     const mlPrediction = await mlService.recommendCrops(inputData);
-    
+
     const prediction = new Prediction({
       type: 'crop',
       location: req.user.location,
@@ -190,9 +195,9 @@ router.post('/crops', auth, async (req, res) => {
       modelInfo: mlPrediction.modelInfo,
       inputData: inputData
     });
-    
+
     await prediction.save();
-    
+
     res.json({
       success: true,
       data: prediction
@@ -210,14 +215,14 @@ router.post('/crops', auth, async (req, res) => {
 router.post('/price', auth, async (req, res) => {
   try {
     const { crop, daysAhead = 30 } = req.body;
-    
+
     if (!crop) {
       return res.status(400).json({
         success: false,
         message: 'Crop name is required'
       });
     }
-    
+
     const inputData = {
       historicalPrice: req.body.currentPrice || 200,
       supply: req.body.supply || 1000,
@@ -231,9 +236,9 @@ router.post('/price', auth, async (req, res) => {
       storageCost: req.body.storageCost || 50,
       timePoint: req.body.timePoint || Date.now()
     };
-    
+
     const mlPrediction = await mlService.predictPrice(crop, inputData, daysAhead);
-    
+
     const prediction = new Prediction({
       type: 'price',
       location: req.user.location,
@@ -245,9 +250,9 @@ router.post('/price', auth, async (req, res) => {
       modelInfo: mlPrediction.modelInfo,
       inputData: { ...inputData, crop }
     });
-    
+
     await prediction.save();
-    
+
     res.json({
       success: true,
       data: prediction
@@ -265,27 +270,27 @@ router.post('/price', auth, async (req, res) => {
 router.put('/:id/validate', auth, async (req, res) => {
   try {
     const { actualValue, accuracy } = req.body;
-    
+
     const prediction = await Prediction.findById(req.params.id);
-    
+
     if (!prediction) {
       return res.status(404).json({
         success: false,
         message: 'Prediction not found'
       });
     }
-    
+
     prediction.validation = {
       actualValue,
       accuracy,
       validatedAt: new Date(),
       validatedBy: req.user._id
     };
-    
+
     prediction.status = accuracy > 0.7 ? 'validated' : 'invalidated';
-    
+
     await prediction.save();
-    
+
     res.json({
       success: true,
       data: prediction
@@ -299,4 +304,5 @@ router.put('/:id/validate', auth, async (req, res) => {
   }
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

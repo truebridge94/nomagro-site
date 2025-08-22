@@ -1,7 +1,8 @@
-import Joi from 'joi';
+// backend/src/utils/validation.js
+const Joi = require('joi');
 
 // User registration validation
-export const validateRegistration = (data) => {
+const validateRegistration = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     email: Joi.string().email().required(),
@@ -22,7 +23,7 @@ export const validateRegistration = (data) => {
 };
 
 // User login validation
-export const validateLogin = (data) => {
+const validateLogin = (data) => {
   const schema = Joi.object({
     email: Joi.string().email().required(),
     password: Joi.string().required()
@@ -32,12 +33,12 @@ export const validateLogin = (data) => {
 };
 
 // Product validation
-export const validateProduct = (data) => {
+const validateProduct = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(2).max(100).required(),
     description: Joi.string().min(10).max(1000).required(),
     category: Joi.string().valid(
-      'Cash Crops', 'Cereals', 'Root Crops', 'Vegetables', 
+      'Cash Crops', 'Cereals', 'Root Crops', 'Vegetables',
       'Fruits', 'Livestock', 'Seeds', 'Equipment'
     ).required(),
     price: Joi.object({
@@ -70,7 +71,7 @@ export const validateProduct = (data) => {
 };
 
 // Weather data validation
-export const validateWeatherInput = (data) => {
+const validateWeatherInput = (data) => {
   const schema = Joi.object({
     temperature: Joi.number().min(-50).max(60).required(),
     humidity: Joi.number().min(0).max(100).required(),
@@ -83,7 +84,7 @@ export const validateWeatherInput = (data) => {
 };
 
 // Prediction input validation
-export const validatePredictionInput = (data, type) => {
+const validatePredictionInput = (data, type) => {
   const baseSchema = {
     location: Joi.object({
       country: Joi.string().required(),
@@ -144,4 +145,13 @@ export const validatePredictionInput = (data, type) => {
 
   const schema = Joi.object({ ...baseSchema, ...specificSchema });
   return schema.validate(data);
+};
+
+// Export all validation functions
+module.exports = {
+  validateRegistration,
+  validateLogin,
+  validateProduct,
+  validateWeatherInput,
+  validatePredictionInput
 };

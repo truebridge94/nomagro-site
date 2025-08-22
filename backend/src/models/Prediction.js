@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+// backend/src/models/Prediction.js
+const mongoose = require('mongoose');
 
 const predictionSchema = new mongoose.Schema({
   type: {
@@ -15,7 +16,7 @@ const predictionSchema = new mongoose.Schema({
     }
   },
   prediction: {
-    value: mongoose.Schema.Types.Mixed, // Can be number, string, or object
+    value: mongoose.Schema.Types.Mixed,
     confidence: {
       type: Number,
       required: true,
@@ -81,4 +82,5 @@ predictionSchema.index({ type: 1, 'location.country': 1, 'location.region': 1 })
 predictionSchema.index({ 'timeframe.startDate': 1, 'timeframe.endDate': 1 });
 predictionSchema.index({ status: 1, createdAt: -1 });
 
-export default mongoose.model('Prediction', predictionSchema);
+// Export using CommonJS
+module.exports = mongoose.model('Prediction', predictionSchema);

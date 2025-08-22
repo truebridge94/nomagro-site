@@ -1,10 +1,11 @@
-import express from 'express';
-import auth from '../middleware/auth.js';
-import User from '../models/User.js';
-import Product from '../models/Product.js';
-import Prediction from '../models/Prediction.js';
-import WeatherData from '../models/WeatherData.js';
-import logger from '../utils/logger.js';
+// backend/src/routes/analytics.js
+const express = require('express');
+const auth = require('../middleware/auth');
+const User = require('../models/User');
+const Product = require('../models/Product');
+const Prediction = require('../models/Prediction');
+const WeatherData = require('../models/WeatherData');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -103,7 +104,7 @@ router.get('/system', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         period,
         users: userStats[0],
         products: productStats[0],
@@ -215,7 +216,7 @@ router.get('/user', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         period,
         products: productAnalytics[0],
         predictions: predictionAnalytics[0],
@@ -334,7 +335,7 @@ router.get('/regional', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         location: { country: targetCountry, region: targetRegion },
         weather: weatherTrends,
         crops: cropDistribution,
@@ -441,7 +442,7 @@ router.get('/prediction-accuracy', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         period,
         type: type || 'all',
         accuracy: accuracyStats[0],
@@ -457,4 +458,5 @@ router.get('/prediction-accuracy', auth, async (req, res) => {
   }
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

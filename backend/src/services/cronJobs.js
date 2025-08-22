@@ -1,12 +1,18 @@
-import cron from 'node-cron';
-import WeatherData from '../models/WeatherData.js';
-import Prediction from '../models/Prediction.js';
-import User from '../models/User.js';
-import mlService from '../ml/MLService.js';
-import logger from '../utils/logger.js';
-import axios from 'axios';
+// backend/src/cronjobs.js
+const cron = require('node-cron');
+const WeatherData = require('../models/WeatherData');
+const Prediction = require('../models/Prediction');
+const User = require('../models/User');
+const mlService = require('../ml/MLService');
+const logger = require('../utils/logger');
+const axios = require('axios');
 
-export function startCronJobs() {
+// Export using CommonJS
+module.exports = {
+  startCronJobs
+};
+
+function startCronJobs() {
   if (process.env.NODE_ENV === 'production') {
     logger.info('Cron jobs disabled in production environment');
     return;
@@ -216,11 +222,11 @@ async function generateUserPredictions(user) {
     const floodInput = {
       rainfall24h: weatherData.current.rainfall,
       rainfall7d: weatherData.forecast.slice(0, 7).reduce((sum, day) => sum + day.rainfall, 0),
-      rainfall30d: 100, // Would come from historical data
+      rainfall30d: 100,
       temperature: weatherData.current.temperature,
       humidity: weatherData.current.humidity,
       pressure: weatherData.current.pressure,
-      elevation: 200, // Default values - would come from user profile or GIS data
+      elevation: 200,
       slope: 5,
       soilType: 2,
       riverDistance: 5000,
@@ -258,7 +264,7 @@ async function generateUserPredictions(user) {
       temperatureAvg: weatherData.current.temperature,
       temperatureMax: weatherData.current.temperature + 5,
       temperatureMin: weatherData.current.temperature - 5,
-      rainfall30d: 50, // Historical data
+      rainfall30d: 50,
       rainfall60d: 120,
       rainfall90d: 200,
       humidity: weatherData.current.humidity,
@@ -353,7 +359,7 @@ async function sendPredictionNotifications() {
 
       for (const user of usersToNotify) {
         try {
-          // Send notification (email, SMS, push, etc.)
+          // Send notification
           await sendNotificationToUser(user, prediction);
           
           // Record notification
@@ -379,13 +385,5 @@ async function sendPredictionNotifications() {
 }
 
 async function sendNotificationToUser(user, prediction) {
-  // This would integrate with email service, SMS service, push notifications, etc.
-  // For now, just log the notification
   logger.info(`Notification sent to ${user.email}: ${prediction.type} prediction with ${prediction.prediction.severity} severity`);
-  
-  // TODO: Implement actual notification sending
-  // - Email via nodemailer
-  // - SMS via Twilio
-  // - Push notifications via Firebase
-  // - In-app notifications via Socket.IO
 }

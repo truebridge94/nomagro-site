@@ -1,11 +1,12 @@
-import express from 'express';
-import auth from '../middleware/auth.js';
-import mlService from '../ml/MLService.js';
-import logger from '../utils/logger.js';
+// backend/src/routes/ml.js
+const express = require('express');
+const auth = require('../middleware/auth');
+const mlService = require('../ml/MLService');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
-// Admin middleware (you might want to create a separate admin auth middleware)
+// Admin middleware
 const adminAuth = (req, res, next) => {
   if (req.user.role !== 'admin') {
     return res.status(403).json({
@@ -23,7 +24,7 @@ router.get('/status', auth, async (req, res) => {
     
     res.json({
       success: true,
-      data: {
+       {
         initialized: mlService.isInitialized,
         models: status
       }
@@ -47,7 +48,7 @@ router.post('/retrain', auth, adminAuth, async (req, res) => {
     res.json({
       success: true,
       message: 'Model retraining completed successfully',
-      data: result
+       result
     });
   } catch (error) {
     logger.error('Model retraining error:', error);
@@ -123,7 +124,7 @@ router.get('/models/:type/info', auth, async (req, res) => {
     
     res.json({
       success: true,
-      data: modelInfo
+       modelInfo
     });
   } catch (error) {
     logger.error('Get model info error:', error);
@@ -178,7 +179,7 @@ router.post('/test/:type', auth, async (req, res) => {
     
     res.json({
       success: true,
-      data: prediction
+       prediction
     });
   } catch (error) {
     logger.error('Test prediction error:', error);
@@ -192,7 +193,6 @@ router.post('/test/:type', auth, async (req, res) => {
 // Get model performance metrics (admin only)
 router.get('/metrics', auth, adminAuth, async (req, res) => {
   try {
-    // This would typically come from a model monitoring system
     const metrics = {
       flood: {
         accuracy: 0.85,
@@ -214,7 +214,7 @@ router.get('/metrics', auth, adminAuth, async (req, res) => {
       },
       crop: {
         accuracy: 0.78,
-        topKAccuracy: 0.92, // Top-3 accuracy
+        topKAccuracy: 0.92,
         lastEvaluated: new Date(),
         totalRecommendations: 2100,
         successfulRecommendations: 1638
@@ -230,7 +230,7 @@ router.get('/metrics', auth, adminAuth, async (req, res) => {
     
     res.json({
       success: true,
-      data: metrics
+       metrics
     });
   } catch (error) {
     logger.error('Get metrics error:', error);
@@ -266,4 +266,5 @@ router.post('/initialize', auth, adminAuth, async (req, res) => {
   }
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

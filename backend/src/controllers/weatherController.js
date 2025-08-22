@@ -1,5 +1,5 @@
 // backend/src/controllers/weatherController.js
-import axios from "axios";
+const axios = require('axios');  // ✅ require instead of import
 
 /**
  * GET /api/weather?region=Kano&country=Nigeria
@@ -10,7 +10,7 @@ import axios from "axios";
  *   location: { region, country }
  * }
  */
-export const getWeather = async (req, res) => {
+const getWeather = async (req, res) => {
   try {
     const { region, country } = req.query;
 
@@ -42,11 +42,13 @@ export const getWeather = async (req, res) => {
     const { lat, lon, name: cityName } = geo[0];
 
     // 2) Current weather
+    // ❌ Remove extra spaces in URL
     const currentUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const currentRes = await axios.get(currentUrl);
     const currentData = currentRes.data;
 
     // 3) 5-day / 3-hour forecast
+    // ❌ Remove extra spaces in URL
     const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&appid=${apiKey}&units=metric`;
     const forecastRes = await axios.get(forecastUrl);
     const forecastData = forecastRes.data;
@@ -111,3 +113,6 @@ export const getWeather = async (req, res) => {
     return res.status(500).json({ error: "Failed to fetch weather data" });
   }
 };
+
+// ✅ Export using CommonJS
+module.exports = { getWeather };

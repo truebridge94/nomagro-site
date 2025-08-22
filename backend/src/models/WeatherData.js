@@ -1,4 +1,5 @@
-import mongoose from 'mongoose';
+// backend/src/models/WeatherData.js
+const mongoose = require('mongoose');
 
 const weatherDataSchema = new mongoose.Schema({
   location: {
@@ -47,4 +48,5 @@ weatherDataSchema.index({ 'location.coordinates': '2dsphere' });
 weatherDataSchema.index({ 'location.country': 1, 'location.region': 1 });
 weatherDataSchema.index({ lastUpdated: -1 });
 
-export default mongoose.model('WeatherData', weatherDataSchema);
+// Export using CommonJS
+module.exports = mongoose.model('WeatherData', weatherDataSchema);

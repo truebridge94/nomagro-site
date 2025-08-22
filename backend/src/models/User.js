@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
-import bcrypt from 'bcryptjs';
-import crypto from 'crypto';
+// backend/src/models/User.js
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
   name: {
@@ -20,7 +21,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters'],
-    select: false
+    select: false // Never return password in queries
   },
   location: {
     country: {
@@ -29,7 +30,7 @@ const userSchema = new mongoose.Schema({
     },
     region: {
       type: String,
-      required: [true, 'Region or Stateis required']
+      required: [true, 'Region or State is required']
     },
     coordinates: {
       lat: { type: Number, required: true },
@@ -79,10 +80,10 @@ const userSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Index for geospatial queries
+// ✅ Index for geospatial queries
 userSchema.index({ 'location.coordinates': '2dsphere' });
 
-// Hash password before saving
+// ✅ Hash password before saving
 userSchema.pre('save', async function(next) {
   if (!this.isModified('password')) return next();
 
@@ -91,12 +92,12 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
-// Compare password method
+// ✅ Compare password method
 userSchema.methods.matchPassword = async function(enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
-// Generate password reset token
+// ✅ Generate password reset token
 userSchema.methods.generatePasswordResetToken = function(expiryMinutes = 15) {
   const resetToken = crypto.randomBytes(20).toString('hex');
 
@@ -105,9 +106,10 @@ userSchema.methods.generatePasswordResetToken = function(expiryMinutes = 15) {
     .update(resetToken)
     .digest('hex');
 
-  this.resetPasswordExpires = Date.now() + expiryMinutes * 60 * 1000; // default 15 minutes
+  this.resetPasswordExpires = Date.now() + expiryMinutes * 60 * 1000; // 15 min default
 
-  return resetToken; // raw token to email to user
+  return resetToken; // Return raw token to email to user
 };
 
-export default mongoose.model('User', userSchema);
+// ✅ Export using CommonJS
+module.exports = mongoose.model('User', userSchema);

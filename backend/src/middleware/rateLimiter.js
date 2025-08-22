@@ -1,5 +1,6 @@
-import rateLimit from 'express-rate-limit';
-import logger from '../utils/logger.js';
+// backend/src/middleware/rateLimiter.js
+const rateLimit = require('express-rate-limit');
+const logger = require('../utils/logger');
 
 // Create rate limiter using express-rate-limit
 const rateLimiterMiddleware = rateLimit({
@@ -20,4 +21,5 @@ const rateLimiterMiddleware = rateLimit({
   }
 });
 
-export default rateLimiterMiddleware;
+// Export using CommonJS
+module.exports = rateLimiterMiddleware;

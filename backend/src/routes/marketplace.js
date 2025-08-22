@@ -1,10 +1,11 @@
-import express from 'express';
-import multer from 'multer';
-import path from 'path';
-import auth from '../middleware/auth.js';
-import Product from '../models/Product.js';
-import { validateProduct } from '../utils/validation.js';
-import logger from '../utils/logger.js';
+// backend/src/routes/marketplace.js
+const express = require('express');
+const multer = require('multer');
+const path = require('path');
+const auth = require('../middleware/auth');
+const Product = require('../models/Product');
+const { validateProduct } = require('../utils/validation');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -83,8 +84,8 @@ router.get('/products', async (req, res) => {
     const products = await Product.find(filter)
       .populate('seller.userId', 'name')
       .sort(sort)
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Product.countDocuments(filter);
 
@@ -430,8 +431,8 @@ router.get('/my-products', auth, async (req, res) => {
 
     const products = await Product.find(filter)
       .sort({ createdAt: -1 })
-      .limit(limit * 1)
-      .skip((page - 1) * limit);
+      .limit(parseInt(limit))
+      .skip((parseInt(page) - 1) * parseInt(limit));
 
     const total = await Product.countDocuments(filter);
 
@@ -456,4 +457,5 @@ router.get('/my-products', auth, async (req, res) => {
   }
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

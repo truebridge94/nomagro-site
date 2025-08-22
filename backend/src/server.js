@@ -1,73 +1,127 @@
 // backend/src/server.js
-import express from "express";
-import dotenv from "dotenv";
-import cors from "cors";
-import morgan from "morgan";
-import path from "path";
-import { fileURLToPath } from "url";
+const express = require('express');
+const dotenv = require('dotenv');
+const cors = require('cors');
+const morgan = require('morgan');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const path = require('path');
 
-// If you already have a DB connector, keep it; otherwise you can remove this import.
-// import connectDB from "./database/connection.js";
-
-import weatherRoutes from "./routes/weather.js";
-
+// Load environment variables
 dotenv.config();
 
 const app = express();
 
-// ----- CORS (allow your Render frontend + localhost) -----
+// ----- Security Middleware -----
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false
+}));
+
+// ----- Rate Limiting (applied to all /api routes) -----
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  message: { success: false, message: 'Too many requests from this IP' }
+});
+app.use('/api', limiter);
+
+// ----- CORS: Allow your frontend -----
 const allowedOrigins = [
-  process.env.CLIENT_URL,                                  // e.g. https://nomagro-site-frontend.onrender.com
-  "https://nomagro.com",
-  "https://nomagro.com",
-  "http://localhost:3000",
-].filter(Boolean); 
+  process.env.CLIENT_URL,
+  'https://nomagro.com',
+  'https://www.nomagro.com',
+  'http://localhost:3000'
+].filter(origin => origin && typeof origin === 'string' && origin.trim() !== '');
 
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      // allow SSR/fetch-without-origin and allowed list
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("CORS blocked: " + origin), false);
-    },
-    credentials: true,
-  })
-);
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    console.log(`CORS blocked: ${origin}`);
+    return callback(new Error('CORS not allowed'), false);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
-// ----- Parsers & logs -----
-app.use(express.json({ limit: "1mb" }));
+// ----- Middleware -----
+app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(morgan("dev"));
+app.use(morgan('dev'));
 
-// ----- Health check -----
-app.get("/api/health", (req, res) => res.json({ ok: true }));
-
-// ----- API routes -----
-app.use("/api", weatherRoutes);
-
-// ----- JSON 404 for /api/* (prevents "Not Found" text) -----
-app.use("/api", (req, res) => {
-  res.status(404).json({ error: "Not found" });
+// ----- Root Health Check (REQUIRED for EB) -----
+app.get('/', (req, res) => {
+  res.status(200).send('Nomagro Backend is running 🚀');
 });
 
-// ----- (Optional) serve a frontend build if you colocate it -----
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+// ----- API Health Check -----
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    ok: true,
+    service: 'Nomagro Backend',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV
+  });
+});
 
-// Example: if you ever build to ../frontend/build
-// app.use(express.static(path.join(__dirname, "../frontend/build")));
-// app.get("*", (req, res) => {
-//   res.sendFile(path.resolve(__dirname, "../frontend", "build", "index.html"));
-// });
+// ----- Connect to MongoDB -----
+const connectDB = require('./database/connection');
 
-// ----- Start server after DB connection (if you have one) -----
-// If you use a DB, uncomment connectDB() and wait before listen.
-// await connectDB();
+// ----- API Routes -----
+try {
+  app.use('/api/auth', require('./routes/auth'));
+  app.use('/api/weather', require('./routes/weather'));
+  app.use('/api/predictions', require('./routes/prediction'));
+  app.use('/api/marketplace', require('./routes/marketplace'));
+  app.use('/api/user', require('./routes/user'));
+  app.use('/api/analytics', require('./routes/analytics'));
+  app.use('/api/ml', require('./routes/ml'));
+} catch (error) {
+  console.error('Failed to load API routes:', error.message);
+  app.use('/api*', (req, res) => {
+    res.status(500).json({ error: 'API failed to start' });
+  });
+}
 
+// ----- 404 for any /api/* route not matched -----
+app.use('/api*', (req, res) => {
+  res.status(404).json({ success: false, message: 'API endpoint not found' });
+});
+
+// ----- Serve Frontend -----
+app.use(express.static('public'));
+
+// ----- Catch-all: Serve React App -----
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// ----- Error Handling Middleware -----
+app.use(require('./middleware/errorHandler'));
+
+// ----- Start Server -----
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(
-    `🚀 Server running on port ${PORT} in ${process.env.NODE_ENV || "development"} mode`
-  );
-});
+const HOST = '0.0.0.0';
 
+// ✅ Handle DB connection errors
+connectDB().then(() => {
+  const server = app.listen(PORT, HOST, () => {
+    console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`🌍 Allowed origins: ${allowedOrigins.join(', ')}`);
+    console.log(`📦 APIs: /api/auth/register, /api/predictions`);
+    console.log(`🛡️  Security: Helmet + Rate Limiting enabled`);
+    console.log(`📁 Static: Serving frontend from /public`);
+  });
+
+  // ✅ Prevent server from hanging
+  server.on('error', (err) => {
+    console.error('Server error:', err);
+    process.exit(1);
+  });
+}).catch(err => {
+  console.error('Failed to connect to MongoDB:', err);
+  process.exit(1);
+});

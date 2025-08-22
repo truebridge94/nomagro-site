@@ -1,6 +1,8 @@
-import express from "express";
-import auth from "../middleware/auth.js";
-import {
+// backend/src/routes/auth.js
+const express = require('express');
+const auth = require('../middleware/auth');
+const { validateRegister } = require('../middleware/validation'); // ✅ Add this
+const {
   register,
   login,
   getMe,
@@ -8,18 +10,22 @@ import {
   changePassword,
   logout,
   forgotPassword,
-  resetPassword,
-} from "../controllers/authController.js";
+  resetPassword
+} = require('../controllers/authController');
 
 const router = express.Router();
 
-router.post("/register", register);
-router.post("/login", login);
-router.get("/me", auth, getMe);
-router.put("/profile", auth, updateProfile);
-router.put("/password", auth, changePassword);
-router.post("/logout", auth, logout);
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
+// Public routes
+router.post('/register', validateRegister, register); // ✅ Validation added
+router.post('/login', login);
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
 
-export default router;
+// Protected routes (require auth)
+router.get('/me', auth, getMe);
+router.put('/profile', auth, updateProfile);
+router.put('/password', auth, changePassword);
+router.post('/logout', auth, logout);
+
+// Export using CommonJS
+module.exports = router;

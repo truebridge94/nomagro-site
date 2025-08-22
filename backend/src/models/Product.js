@@ -1,152 +1,71 @@
-import mongoose from 'mongoose';
+// backend/src/models/Product.js
+const mongoose = require('mongoose');
 
-const productSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: [true, 'Product name is required'],
-    trim: true,
-    maxlength: [100, 'Product name cannot exceed 100 characters']
-  },
-  description: {
-    type: String,
-    required: [true, 'Product description is required'],
-    maxlength: [1000, 'Description cannot exceed 1000 characters']
-  },
-  category: {
-    type: String,
-    required: [true, 'Category is required'],
-    enum: ['Cash Crops', 'Cereals', 'Root Crops', 'Vegetables', 'Fruits', 'Livestock', 'Seeds', 'Equipment']
-  },
+const ProductSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  description: { type: String, required: true },
+  category: { type: String, required: true },
   price: {
-    amount: {
-      type: Number,
-      required: [true, 'Price is required'],
-      min: [0, 'Price cannot be negative']
-    },
-    currency: {
-      type: String,
-      default: 'USD'
-    },
-    unit: {
-      type: String,
-      required: [true, 'Price unit is required'],
-      enum: ['per kg', 'per ton', 'per bag', 'per crate', 'per piece', 'per liter']
-    }
+    amount: { type: Number, required: true },
+    currency: { type: String, default: 'USD' },
+    unit: { type: String, required: true }
   },
   quantity: {
-    available: {
-      type: Number,
-      required: [true, 'Available quantity is required'],
-      min: [0, 'Quantity cannot be negative']
-    },
-    unit: {
-      type: String,
-      required: [true, 'Quantity unit is required']
-    }
+    available: { type: Number, required: true },
+    unit: { type: String, required: true }
   },
   seller: {
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
-      required: true
-    },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     name: { type: String, required: true },
     contact: {
       phone: { type: String, required: true },
       email: { type: String, required: true },
-      whatsapp: String
+      whatsapp: { type: String }
     }
   },
   location: {
     country: { type: String, required: true },
-    region: { type: String, required: true },
-    coordinates: {
-      lat: { type: Number, required: true },
-      lng: { type: Number, required: true }
-    },
-    address: String
+    region: { type: String, required: true }
   },
   images: [{
     url: { type: String, required: true },
-    alt: String,
+    alt: { type: String },
     isPrimary: { type: Boolean, default: false }
   }],
   specifications: {
-    harvestDate: Date,
-    expiryDate: Date,
+    harvestDate: { type: Date },
+    expiryDate: { type: Date },
     isOrganic: { type: Boolean, default: false },
-    variety: String,
-    grade: {
-      type: String,
-      enum: ['A', 'B', 'C', 'Premium', 'Standard']
-    },
+    variety: { type: String },
+    grade: { type: String },
     certifications: [String]
   },
-  status: {
-    type: String,
-    enum: ['draft', 'active', 'sold', 'expired', 'suspended'],
-    default: 'draft'
-  },
-  views: {
-    type: Number,
-    default: 0
-  },
+  status: { type: String, default: 'active' },
+  views: { type: Number, default: 0 },
   inquiries: [{
-    buyerId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    message: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    status: {
-      type: String,
-      enum: ['pending', 'responded', 'closed'],
-      default: 'pending'
-    }
+    buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    message: { type: String },
+    status: { type: String, default: 'pending' },
+    createdAt: { type: Date, default: Date.now }
   }],
   ratings: [{
-    userId: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'User'
-    },
-    rating: {
-      type: Number,
-      min: 1,
-      max: 5
-    },
-    review: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    }
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    rating: { type: Number, min: 1, max: 5 },
+    review: { type: String },
+    createdAt: { type: Date, default: Date.now }
   }],
-  averageRating: {
-    type: Number,
-    default: 0
-  }
-}, {
-  timestamps: true
+  averageRating: { type: Number, default: 0 }
 });
 
-// Indexes
-productSchema.index({ 'location.coordinates': '2dsphere' });
-productSchema.index({ category: 1, status: 1 });
-productSchema.index({ 'seller.userId': 1 });
-productSchema.index({ createdAt: -1 });
-productSchema.index({ 'price.amount': 1 });
-
-// Calculate average rating
-productSchema.methods.calculateAverageRating = function() {
+// Method to recalculate average rating
+ProductSchema.methods.calculateAverageRating = async function() {
   if (this.ratings.length === 0) {
     this.averageRating = 0;
   } else {
-    const sum = this.ratings.reduce((acc, rating) => acc + rating.rating, 0);
+    const sum = this.ratings.reduce((acc, r) => acc + r.rating, 0);
     this.averageRating = sum / this.ratings.length;
   }
-  return this.save();
+  await this.save();
 };
 
-export default mongoose.model('Product', productSchema);
+module.exports = mongoose.model('Product', ProductSchema);

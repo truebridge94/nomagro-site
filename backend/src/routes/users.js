@@ -1,9 +1,10 @@
-import express from 'express';
-import auth from '../middleware/auth.js';
-import User from '../models/User.js';
-import Product from '../models/Product.js';
-import Prediction from '../models/Prediction.js';
-import logger from '../utils/logger.js';
+// backend/src/routes/user.js
+const express = require('express');
+const auth = require('../middleware/auth');
+const User = require('../models/User');
+const Product = require('../models/Product');
+const Prediction = require('../models/Prediction');
+const logger = require('../utils/logger');
 
 const router = express.Router();
 
@@ -21,12 +22,12 @@ router.get('/dashboard', auth, async (req, res) => {
       'timeframe.endDate': { $gte: new Date() }
     }).sort({ createdAt: -1 }).limit(5);
 
-    // Get user's products
-    const products = await Product.find({
+    // Get user's products count
+    const productsCount = await Product.countDocuments({
       'seller.userId': userId
-    }).countDocuments();
+    });
 
-    // Get user's product inquiries
+    // Get user's pending inquiries
     const inquiries = await Product.aggregate([
       { $match: { 'seller.userId': userId } },
       { $unwind: '$inquiries' },
@@ -36,7 +37,7 @@ router.get('/dashboard', auth, async (req, res) => {
 
     // Get user's activity stats
     const stats = {
-      totalProducts: products,
+      totalProducts: productsCount,
       pendingInquiries: inquiries[0]?.total || 0,
       activePredictions: predictions.length,
       lastLogin: req.user.lastLogin
@@ -44,7 +45,7 @@ router.get('/dashboard', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         user: req.user,
         predictions,
         stats
@@ -66,7 +67,7 @@ router.get('/profile', auth, async (req, res) => {
     
     res.json({
       success: true,
-      data: user
+       user
     });
   } catch (error) {
     logger.error('Get profile error:', error);
@@ -96,7 +97,7 @@ router.put('/preferences', auth, async (req, res) => {
     res.json({
       success: true,
       message: 'Preferences updated successfully',
-      data: user
+       user
     });
   } catch (error) {
     logger.error('Update preferences error:', error);
@@ -128,7 +129,7 @@ router.get('/nearby', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: nearbyUsers
+       nearbyUsers
     });
   } catch (error) {
     logger.error('Get nearby users error:', error);
@@ -185,7 +186,7 @@ router.get('/activity', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         activities: paginatedActivities,
         pagination: {
           current: parseInt(page),
@@ -222,7 +223,7 @@ router.get('/stats', auth, async (req, res) => {
       }
     ]);
 
-    // Prediction accuracy (if user has validated predictions)
+    // Prediction accuracy
     const predictionStats = await Prediction.aggregate([
       {
         $match: {
@@ -258,7 +259,7 @@ router.get('/stats', auth, async (req, res) => {
 
     res.json({
       success: true,
-      data: {
+       {
         products: productStats,
         predictions: predictionStats,
         monthlyActivity
@@ -317,4 +318,5 @@ router.delete('/account', auth, async (req, res) => {
   }
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

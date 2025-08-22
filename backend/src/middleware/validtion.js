@@ -1,6 +1,7 @@
-import { body, validationResult } from 'express-validator';
+// backend/src/middleware/validation.js
+const { body, validationResult } = require('express-validator');
 
-export const validateRegister = [
+const validateRegister = [
   body('email').isEmail().withMessage('Enter a valid email'),
   body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
   body('name').notEmpty().withMessage('Name is required'),
@@ -12,3 +13,6 @@ export const validateRegister = [
     next();
   }
 ];
+
+// Export using CommonJS
+module.exports = { validateRegister };

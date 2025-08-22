@@ -1,4 +1,5 @@
-import logger from '../utils/logger.js';
+// backend/src/middleware/errorHandler.js
+const logger = require('../utils/logger');
 
 const errorHandler = (err, req, res, next) => {
   let error = { ...err };
@@ -21,7 +22,9 @@ const errorHandler = (err, req, res, next) => {
 
   // Mongoose validation error
   if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message).join(', ');
+    const message = Object.values(err.errors)
+      .map(val => val.message)
+      .join(', ');
     error = { message, statusCode: 400 };
   }
 
@@ -43,4 +46,5 @@ const errorHandler = (err, req, res, next) => {
   });
 };
 
-export default errorHandler;
+// Export using CommonJS
+module.exports = errorHandler;

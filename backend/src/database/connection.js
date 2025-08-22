@@ -1,5 +1,6 @@
-import mongoose from 'mongoose';
-import logger from '../utils/logger.js';
+// backend/src/database/connection.js
+const mongoose = require('mongoose');
+const logger = require('../utils/logger');
 
 const connectDB = async () => {
   try {
@@ -28,11 +29,10 @@ const connectDB = async () => {
       logger.info('MongoDB connection closed through app termination');
       process.exit(0);
     });
-
   } catch (error) {
     logger.error('Database connection failed:', error);
     process.exit(1);
   }
 };
 
-export default connectDB;
+module.exports = connectDB;
