@@ -33,9 +33,9 @@ app.use('/api', limiter);
 // ----- CORS: Allow your frontend -----
 const allowedOrigins = [
   process.env.CLIENT_URL,
-  'https://nomagro.com',
   'https://www.nomagro.com',
-  'http://localhost:3000'
+  'https://nomagro.com',
+  
 ].filter(origin => origin && typeof origin === 'string' && origin.trim() !== '');
 
 app.use(cors({
