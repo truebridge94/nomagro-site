@@ -10,27 +10,11 @@ const handleValidationErrors = (req, res, next) => {
   next();
 };
 
-// ✅ Register validation (email OR phone required + extra fields)
+// ✅ Register validation
 const validateRegister = [
   body('name')
     .notEmpty()
     .withMessage('Name is required'),
-
-  body().custom((_, { req }) => {
-    if (!req.body.email && !req.body.phone) {
-      throw new Error('Either email or phone is required');
-    }
-
-    if (req.body.email && !/\S+@\S+\.\S+/.test(req.body.email)) {
-      throw new Error('Valid email is required');
-    }
-
-    if (req.body.phone && !/^\+?\d{7,15}$/.test(req.body.phone)) {
-      throw new Error('Valid phone number is required');
-    }
-
-    return true;
-  }),
 
   body('password')
     .isLength({ min: 6 })
@@ -46,12 +30,10 @@ const validateRegister = [
     .notEmpty()
     .withMessage('Preferred language is required'),
 
-  // ✅ Replace farmLocation.state with country
   body('country')
     .notEmpty()
     .withMessage('Country is required'),
 
-  // ✅ Replace farmLocation.lga with region
   body('region')
     .notEmpty()
     .withMessage('State/Region is required'),
@@ -59,20 +41,17 @@ const validateRegister = [
   handleValidationErrors,
 ];
 
-// ✅ Login validation (emailOrPhone + password)
+// ✅ Login validation (supports emailOrPhone)
 const validateLogin = [
   body('emailOrPhone')
     .notEmpty()
     .withMessage('Email or phone is required')
-    .custom((value, { req }) => {
-      // Check if it's a valid email OR valid phone
+    .custom((value) => {
       const isEmail = /\S+@\S+\.\S+/.test(value);
       const isPhone = /^\+?\d{7,15}$/.test(value);
-
       if (!isEmail && !isPhone) {
         throw new Error('Must be a valid email or phone number');
       }
-
       return true;
     }),
 
@@ -99,7 +78,6 @@ const validateUpdateProfile = [
   body('name').optional().notEmpty().withMessage('Name cannot be empty'),
   body('age').optional().isInt({ min: 1 }).withMessage('Age must be a positive number'),
   body('preferredLanguage').optional().notEmpty().withMessage('Preferred language is required'),
-  // ✅ Replace with country and region
   body('country').optional().notEmpty().withMessage('Country is required'),
   body('region').optional().notEmpty().withMessage('State/Region is required'),
   handleValidationErrors,
