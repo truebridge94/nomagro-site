@@ -39,20 +39,22 @@ const validateRegister = [
   body('age')
     .notEmpty()
     .withMessage('Age is required')
-    .isInt({ min: 15 })
-    .withMessage('Age must be a number greater than 15'),
+    .isInt({ min: 1 })
+    .withMessage('Age must be a positive number'),
 
   body('preferredLanguage')
     .notEmpty()
     .withMessage('Preferred language is required'),
 
-  body('farmLocation.state')
+  // ✅ Replace farmLocation.state with country
+  body('country')
     .notEmpty()
-    .withMessage('Farm state is required'),
+    .withMessage('Country is required'),
 
-  body('farmLocation.lga')
+  // ✅ Replace farmLocation.lga with region
+  body('region')
     .notEmpty()
-    .withMessage('Farm LGA is required'),
+    .withMessage('State/Region is required'),
 
   handleValidationErrors,
 ];
@@ -96,10 +98,11 @@ const validateResetPassword = [
 // ✅ Update profile validation
 const validateUpdateProfile = [
   body('name').optional().notEmpty().withMessage('Name cannot be empty'),
-  body('age').optional().isInt({ min: 15 }).withMessage('Age must be greater than 15'),
+  body('age').optional().isInt({ min: 1 }).withMessage('Age must be a positive number'),
   body('preferredLanguage').optional().notEmpty().withMessage('Preferred language is required'),
-  body('farmLocation.state').optional().notEmpty().withMessage('Farm state is required'),
-  body('farmLocation.lga').optional().notEmpty().withMessage('Farm LGA is required'),
+  // ✅ Replace with country and region
+  body('country').optional().notEmpty().withMessage('Country is required'),
+  body('region').optional().notEmpty().withMessage('State/Region is required'),
   handleValidationErrors,
 ];
 
