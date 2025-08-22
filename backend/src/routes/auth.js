@@ -2,7 +2,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const validation = require('../middleware/validation');
-const authController = require('../controllers/authController');
+const authController = require('../controllers/authController'); // ✅ No destructuring
 
 const router = express.Router();
 
