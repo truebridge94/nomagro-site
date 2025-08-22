@@ -9,7 +9,7 @@
     "lint": "eslint .",
     "preview": "vite preview",
     "tsc": "tsc --noEmit -p ."
-  },
+  },  
   "dependencies": {
     "@types/react-router-dom": "^5.3.3",
     "axios": "^1.11.0",
