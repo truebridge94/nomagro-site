@@ -12,6 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// ✅ Trust AWS/Elastic Beanstalk proxy (fix for express-rate-limit + X-Forwarded-For)
+app.set('trust proxy', 1);
+
 // ----- Security Middleware -----
 app.use(helmet({
   contentSecurityPolicy: false,
