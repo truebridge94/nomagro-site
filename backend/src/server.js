@@ -79,7 +79,7 @@ try {
   app.use('/api/weather', require('./routes/weather'));
   app.use('/api/predictions', require('./routes/predictions'));
   app.use('/api/marketplace', require('./routes/marketplace'));
-  app.use('/api/user', require('./routes/user'));
+  app.use('/api/user', require('./routes/users'));
   app.use('/api/analytics', require('./routes/analytics'));
   app.use('/api/ml', require('./routes/ml'));
 } catch (error) {
