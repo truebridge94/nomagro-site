@@ -77,7 +77,7 @@ const connectDB = require('./database/connection');
 try {
   app.use('/api/auth', require('./routes/auth'));
   app.use('/api/weather', require('./routes/weather'));
-  app.use('/api/predictions', require('./routes/prediction'));
+  app.use('/api/predictions', require('./routes/predictions'));
   app.use('/api/marketplace', require('./routes/marketplace'));
   app.use('/api/user', require('./routes/user'));
   app.use('/api/analytics', require('./routes/analytics'));
