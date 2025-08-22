@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const logger = require('../utils/logger');
-const sendEmail = require('../utils/sendEmail'); // utility function for sending emails
+const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 
 // Helper: generate JWT
@@ -15,26 +15,58 @@ const generateToken = (userId) => {
 
 // @desc    Register user
 // @route   POST /api/auth/register
-exports.register = async (req, res) => {
+exports.registerUser = async (req, res) => {
   try {
-    const { fullName, age, farmLocation, preferredLanguage, email, phone, password } = req.body;
+    const {
+      name,           // frontend sends "name"
+      age,
+      country,        // frontend sends "country"
+      region,         // frontend sends "region"
+      preferredLanguage,
+      email,
+      phone,
+      password,
+      farmSize,
+      crops
+    } = req.body;
 
-    // check if user already exists
-    const existingUser = await User.findOne({ $or: [{ email }, { phone }] });
+    // Validate required fields
+    if (!name || (!email && !phone) || !password || !age || !preferredLanguage || !country || !region) {
+      return res.status(400).json({ 
+        msg: 'Please fill all required fields: name, email/phone, password, age, language, country, region' 
+      });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { phone }] 
+    }).exec();
+
     if (existingUser) {
-      return res.status(400).json({ msg: 'User with this email or phone already exists' });
+      return res.status(400).json({ 
+        msg: 'User with this email or phone already exists' 
+      });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
+    // Build location object
+    const location = {
+      country,
+      region,
+      coordinates: { lat: 0, lng: 0 } // will be updated later via geocoding
+    };
+
     const user = await User.create({
-      fullName,
-      age,
-      farmLocation,
+      name,                    // changed from fullName
+      age: Number(age),
+      location,                // changed from farmLocation (object)
       preferredLanguage,
       email,
       phone,
       password: hashedPassword,
+      farmSize: farmSize ? parseFloat(farmSize) : undefined,
+      crops: crops ? crops.split(',').map(c => c.trim()).filter(Boolean) : []
     });
 
     const token = generateToken(user._id);
@@ -43,23 +75,25 @@ exports.register = async (req, res) => {
       token,
       user: {
         id: user._id,
-        fullName: user.fullName,
+        name: user.name,
         age: user.age,
-        farmLocation: user.farmLocation,
+        location: user.location,
         preferredLanguage: user.preferredLanguage,
         email: user.email,
         phone: user.phone,
+        farmSize: user.farmSize,
+        crops: user.crops
       },
     });
   } catch (err) {
-    logger.error(err.message);
-    res.status(500).json({ msg: 'Server error' });
+    logger.error('Registration error:', err.message || err);
+    res.status(500).json({ msg: 'Server error during registration' });
   }
 };
 
 // @desc    Login user
 // @route   POST /api/auth/login
-exports.login = async (req, res) => {
+exports.loginUser = async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
 
@@ -72,7 +106,6 @@ exports.login = async (req, res) => {
     }
 
     const isMatch = await bcrypt.compare(password, user.password);
-
     if (!isMatch) {
       return res.status(400).json({ msg: 'Invalid credentials' });
     }
@@ -83,12 +116,14 @@ exports.login = async (req, res) => {
       token,
       user: {
         id: user._id,
-        fullName: user.fullName,
+        name: user.name,
         age: user.age,
-        farmLocation: user.farmLocation,
+        location: user.location,
         preferredLanguage: user.preferredLanguage,
         email: user.email,
         phone: user.phone,
+        farmSize: user.farmSize,
+        crops: user.crops
       },
     });
   } catch (err) {
@@ -102,6 +137,8 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
     res.json(user);
   } catch (err) {
     logger.error(err.message);
@@ -113,13 +150,21 @@ exports.getMe = async (req, res) => {
 // @route   PUT /api/auth/profile
 exports.updateProfile = async (req, res) => {
   try {
-    const { fullName, age, farmLocation, preferredLanguage, email, phone } = req.body;
+    const { name, age, country, region, preferredLanguage, email, phone, farmSize, crops } = req.body;
+
+    const location = {
+      country,
+      region,
+      coordinates: { lat: 0, lng: 0 }
+    };
 
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { fullName, age, farmLocation, preferredLanguage, email, phone },
-      { new: true }
+      { name, age, location, preferredLanguage, email, phone, farmSize, crops },
+      { new: true, runValidators: true }
     ).select('-password');
+
+    if (!updatedUser) return res.status(404).json({ msg: 'User not found' });
 
     res.json(updatedUser);
   } catch (err) {
@@ -152,9 +197,8 @@ exports.changePassword = async (req, res) => {
 
 // @desc    Logout user
 // @route   POST /api/auth/logout
-exports.logout = async (req, res) => {
+exports.logoutUser = async (req, res) => {
   try {
-    // In JWT, logout is handled on the client side (delete token)
     res.json({ msg: 'Logged out successfully (client should clear token)' });
   } catch (err) {
     logger.error(err.message);
@@ -171,7 +215,6 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ msg: 'User not found' });
 
-    // generate reset token
     const resetToken = crypto.randomBytes(20).toString('hex');
     const resetTokenHash = crypto.createHash('sha256').update(resetToken).digest('hex');
 
@@ -180,11 +223,11 @@ exports.forgotPassword = async (req, res) => {
     await user.save();
 
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password/${resetToken}`;
-    const message = `You requested a password reset. Please make a PUT request to: \n\n ${resetUrl}`;
+    const message = `You requested a password reset. Click here to reset: \n\n ${resetUrl}`;
 
     await sendEmail({
       to: user.email,
-      subject: 'Password Reset',
+      subject: 'Password Reset Request',
       text: message,
     });
 

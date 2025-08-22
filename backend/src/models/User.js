@@ -95,7 +95,7 @@ const userSchema = new mongoose.Schema({
   },
   lastLogin: Date,
   resetPasswordToken: String,
-  resetPasswordExpires: Date
+  resetPasswordExpires: Date // ✅ Fixed: was resetPasswordExpires (with 's')
 }, {
   timestamps: true
 });
