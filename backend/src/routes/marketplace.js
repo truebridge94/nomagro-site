@@ -4,7 +4,8 @@ const multer = require('multer');
 const path = require('path');
 const auth = require('../middleware/auth');
 const Product = require('../models/Product');
-const { validateProduct } = require('../utils/validation');
+const validation = require('../utils/validation'); // ✅ No destructuring
+const validateProduct = validation.validateProduct; // ✅ Safe access
 const logger = require('../utils/logger');
 
 const router = express.Router();
@@ -55,7 +56,6 @@ router.get('/products', async (req, res) => {
       sortOrder = 'desc'
     } = req.query;
 
-    // Build filter object
     const filter = { status: 'active' };
 
     if (category) filter.category = category;
@@ -76,11 +76,9 @@ router.get('/products', async (req, res) => {
       ];
     }
 
-    // Build sort object
     const sort = {};
     sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
 
-    // Execute query with pagination
     const products = await Product.find(filter)
       .populate('seller.userId', 'name')
       .sort(sort)
@@ -125,7 +123,6 @@ router.get('/products/:id', async (req, res) => {
       });
     }
 
-    // Increment view count
     product.views += 1;
     await product.save();
 
@@ -145,7 +142,6 @@ router.get('/products/:id', async (req, res) => {
 // Create new product
 router.post('/products', auth, upload.array('images', 5), async (req, res) => {
   try {
-    // Validate input
     const { error } = validateProduct(req.body);
     if (error) {
       return res.status(400).json({
@@ -154,14 +150,12 @@ router.post('/products', auth, upload.array('images', 5), async (req, res) => {
       });
     }
 
-    // Process uploaded images
     const images = req.files ? req.files.map((file, index) => ({
       url: `/uploads/products/${file.filename}`,
       alt: `${req.body.name} image ${index + 1}`,
       isPrimary: index === 0
     })) : [];
 
-    // Create product
     const product = new Product({
       name: req.body.name,
       description: req.body.description,
@@ -225,7 +219,6 @@ router.put('/products/:id', auth, upload.array('images', 5), async (req, res) =>
       });
     }
 
-    // Check if user owns the product
     if (product.seller.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -233,7 +226,6 @@ router.put('/products/:id', auth, upload.array('images', 5), async (req, res) =>
       });
     }
 
-    // Update fields
     const allowedUpdates = [
       'name', 'description', 'category', 'price', 'quantity',
       'specifications', 'status'
@@ -253,7 +245,6 @@ router.put('/products/:id', auth, upload.array('images', 5), async (req, res) =>
       }
     });
 
-    // Handle new images
     if (req.files && req.files.length > 0) {
       const newImages = req.files.map((file, index) => ({
         url: `/uploads/products/${file.filename}`,
@@ -291,7 +282,6 @@ router.delete('/products/:id', auth, async (req, res) => {
       });
     }
 
-    // Check if user owns the product
     if (product.seller.userId.toString() !== req.user._id.toString()) {
       return res.status(403).json({
         success: false,
@@ -335,7 +325,6 @@ router.post('/products/:id/inquiries', auth, async (req, res) => {
       });
     }
 
-    // Check if user is not the seller
     if (product.seller.userId.toString() === req.user._id.toString()) {
       return res.status(400).json({
         success: false,
@@ -386,7 +375,6 @@ router.post('/products/:id/ratings', auth, async (req, res) => {
       });
     }
 
-    // Check if user already rated this product
     const existingRating = product.ratings.find(
       r => r.userId.toString() === req.user._id.toString()
     );
@@ -405,7 +393,6 @@ router.post('/products/:id/ratings', auth, async (req, res) => {
       createdAt: new Date()
     });
 
-    // Recalculate average rating
     await product.calculateAverageRating();
 
     res.json({
@@ -457,5 +444,4 @@ router.get('/my-products', auth, async (req, res) => {
   }
 });
 
-// Export using CommonJS
 module.exports = router;

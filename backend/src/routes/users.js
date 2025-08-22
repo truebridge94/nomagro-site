@@ -1,4 +1,4 @@
-// backend/src/routes/user.js
+// backend/src/routes/users.js
 const express = require('express');
 const auth = require('../middleware/auth');
 const User = require('../models/User');

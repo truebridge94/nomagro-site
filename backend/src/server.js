@@ -84,12 +84,11 @@ try {
   app.use('/api/analytics', require('./routes/analytics'));
   app.use('/api/ml', require('./routes/ml'));
 } catch (error) {
-  console.error('Failed to load API routes:', error.message);
+  console.error('Failed to load API routes:', error); // ✅ Log full error
   app.use('/api*', (req, res) => {
     res.status(500).json({ error: 'API failed to start' });
   });
 }
-
 // ----- 404 for any /api/* route not matched -----
 app.use('/api*', (req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });

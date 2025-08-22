@@ -6,14 +6,14 @@ const Prediction = require('../models/Prediction');
 const WeatherData = require('../models/WeatherData');
 const logger = require('../utils/logger');
 
+// ✅ Use express.Router() directly — avoid destructuring
 const router = express.Router();
 
 // Get predictions for user's location
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, async function (req, res) {
   try {
     const { country, region } = req.user.location;
 
-    // Get recent predictions for user's location
     const predictions = await Prediction.find({
       'location.country': country,
       'location.region': region,
@@ -35,11 +35,10 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Generate new flood prediction
-router.post('/flood', auth, async (req, res) => {
+router.post('/flood', auth, async function (req, res) {
   try {
     const { location } = req.user;
 
-    // Get latest weather data for the location
     const weatherData = await WeatherData.findOne({
       'location.country': location.country,
       'location.region': location.region
@@ -52,7 +51,6 @@ router.post('/flood', auth, async (req, res) => {
       });
     }
 
-    // Prepare input data for ML model
     const inputData = {
       rainfall24h: weatherData.current.rainfall,
       rainfall7d: weatherData.forecast.slice(0, 7).reduce((sum, day) => sum + day.rainfall, 0),
@@ -69,10 +67,8 @@ router.post('/flood', auth, async (req, res) => {
       landCover: req.body.landCover || 3
     };
 
-    // Get prediction from ML service
     const mlPrediction = await mlService.predictFlood(inputData);
 
-    // Save prediction to database
     const prediction = new Prediction({
       type: 'flood',
       location: location,
@@ -88,7 +84,6 @@ router.post('/flood', auth, async (req, res) => {
 
     await prediction.save();
 
-    // Emit real-time update
     const io = req.app.get('io');
     if (io) {
       io.to(`user-${req.user._id}`).emit('new-prediction', prediction);
@@ -108,7 +103,7 @@ router.post('/flood', auth, async (req, res) => {
 });
 
 // Generate drought prediction
-router.post('/drought', auth, async (req, res) => {
+router.post('/drought', auth, async function (req, res) {
   try {
     const { location } = req.user;
 
@@ -165,7 +160,7 @@ router.post('/drought', auth, async (req, res) => {
 });
 
 // Get crop recommendations
-router.post('/crops', auth, async (req, res) => {
+router.post('/crops', auth, async function (req, res) {
   try {
     const inputData = {
       temperature: req.body.temperature || 25,
@@ -212,7 +207,7 @@ router.post('/crops', auth, async (req, res) => {
 });
 
 // Get price prediction
-router.post('/price', auth, async (req, res) => {
+router.post('/price', auth, async function (req, res) {
   try {
     const { crop, daysAhead = 30 } = req.body;
 
@@ -266,8 +261,8 @@ router.post('/price', auth, async (req, res) => {
   }
 });
 
-// Validate prediction (for model improvement)
-router.put('/:id/validate', auth, async (req, res) => {
+// Validate prediction
+router.put('/:id/validate', auth, async function (req, res) {
   try {
     const { actualValue, accuracy } = req.body;
 
@@ -304,5 +299,5 @@ router.put('/:id/validate', auth, async (req, res) => {
   }
 });
 
-// Export using CommonJS
+// ✅ Export using CommonJS
 module.exports = router;
