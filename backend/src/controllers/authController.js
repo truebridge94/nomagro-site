@@ -18,10 +18,10 @@ const generateToken = (userId) => {
 exports.registerUser = async (req, res) => {
   try {
     const {
-      name,           // frontend sends "name"
+      name,
       age,
-      country,        // frontend sends "country"
-      region,         // frontend sends "region"
+      country,
+      region,
       preferredLanguage,
       email,
       phone,
@@ -54,13 +54,13 @@ exports.registerUser = async (req, res) => {
     const location = {
       country,
       region,
-      coordinates: { lat: 0, lng: 0 } // will be updated later via geocoding
+      coordinates: { lat: 0, lng: 0 }
     };
 
     const user = await User.create({
-      name,                    // changed from fullName
+      name,
       age: Number(age),
-      location,                // changed from farmLocation (object)
+      location,
       preferredLanguage,
       email,
       phone,
@@ -261,5 +261,86 @@ exports.resetPassword = async (req, res) => {
   } catch (err) {
     logger.error(err.message);
     res.status(500).json({ msg: 'Server error' });
+  }
+};
+
+// @desc    Update language
+// @route   PUT /api/auth/update-language
+exports.updateLanguage = async (req, res) => {
+  try {
+    const { preferredLanguage } = req.body;
+
+    if (!preferredLanguage) {
+      return res.status(400).json({ msg: 'Preferred language is required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { preferredLanguage },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    logger.error('Update language error:', err.message);
+    res.status(500).json({ msg: 'Server error updating language' });
+  }
+};
+
+// @desc    Update age
+// @route   PUT /api/auth/update-age
+exports.updateAge = async (req, res) => {
+  try {
+    const { age } = req.body;
+
+    if (!age || isNaN(age) || age <= 0) {
+      return res.status(400).json({ msg: 'Valid age is required' });
+    }
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { age: Number(age) },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    logger.error('Update age error:', err.message);
+    res.status(500).json({ msg: 'Server error updating age' });
+  }
+};
+
+// @desc    Update location
+// @route   PUT /api/auth/update-location
+exports.updateLocation = async (req, res) => {
+  try {
+    const { country, region } = req.body;
+
+    if (!country || !region) {
+      return res.status(400).json({ msg: 'Country and region are required' });
+    }
+
+    const location = {
+      country,
+      region,
+      coordinates: { lat: 0, lng: 0 }
+    };
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id,
+      { location },
+      { new: true }
+    ).select('-password');
+
+    if (!user) return res.status(404).json({ msg: 'User not found' });
+
+    res.json(user);
+  } catch (err) {
+    logger.error('Update location error:', err.message);
+    res.status(500).json({ msg: 'Server error updating location' });
   }
 };
