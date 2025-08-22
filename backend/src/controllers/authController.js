@@ -27,13 +27,15 @@ exports.registerUser = async (req, res) => {
       phone,
       password,
       farmSize,
-      crops
+      crops,
+      location
     } = req.body;
 
     // Validate required fields
     if (!name || (!email && !phone) || !password || !age || !preferredLanguage || !country || !region) {
       return res.status(400).json({ 
-        msg: 'Please fill all required fields: name, email/phone, password, age, language, country, region' 
+        msg: 'Please fill all required fields: name, email/phone, password, age, language, country, region',
+        success: false
       });
     }
 
@@ -44,14 +46,15 @@ exports.registerUser = async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({ 
-        msg: 'User with this email or phone already exists' 
+        msg: 'User with this email or phone already exists',
+        success: false
       });
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Build location object
-    const location = {
+    const userLocation = location || {
       country,
       region,
       coordinates: { lat: 0, lng: 0 }
@@ -60,7 +63,7 @@ exports.registerUser = async (req, res) => {
     const user = await User.create({
       name,
       age: Number(age),
-      location,
+      location: userLocation,
       preferredLanguage,
       email,
       phone,
@@ -72,6 +75,7 @@ exports.registerUser = async (req, res) => {
     const token = generateToken(user._id);
 
     res.status(201).json({
+      success: true,
       token,
       user: {
         id: user._id,
@@ -87,7 +91,10 @@ exports.registerUser = async (req, res) => {
     });
   } catch (err) {
     logger.error('Registration error:', err.message || err);
-    res.status(500).json({ msg: 'Server error during registration' });
+    res.status(500).json({ 
+      msg: 'Server error during registration',
+      success: false
+    });
   }
 };
 
@@ -95,34 +102,42 @@ exports.registerUser = async (req, res) => {
 // @route   POST /api/auth/login
 exports.loginUser = async (req, res) => {
   try {
-    const { emailOrPhone, password } = req.body;
+    const { emailOrPhone, email, phone, password } = req.body;
 
     // ✅ Add early validation
-    if (!emailOrPhone || !password) {
+    const identifier = emailOrPhone || email || phone;
+    if (!identifier || !password) {
       return res.status(400).json({ 
-        msg: 'Email/phone and password are required' 
+        msg: 'Email/phone and password are required',
+        success: false
       });
     }
 
     // ✅ Normalize input
-    const identifier = emailOrPhone.trim().toLowerCase();
+    const normalizedIdentifier = identifier.trim().toLowerCase();
 
     // ✅ Find user by email or phone
     const user = await User.findOne({
       $or: [
-        { email: identifier },
-        { phone: identifier }
+        { email: normalizedIdentifier },
+        { phone: normalizedIdentifier }
       ]
     });
 
     if (!user) {
-      return res.status(400).json({ msg: 'Invalid credentials' });
+      return res.status(400).json({ 
+        msg: 'Invalid credentials',
+        success: false
+      });
     }
 
     // ✅ Compare password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ msg: 'Invalid credentials' });
+      return res.status(400).json({ 
+        msg: 'Invalid credentials',
+        success: false
+      });
     }
 
     // ✅ Validate JWT_SECRET
@@ -135,6 +150,7 @@ exports.loginUser = async (req, res) => {
 
     // ✅ Send response
     res.json({
+      success: true,
       token,
       user: {
         id: user._id,
@@ -151,7 +167,10 @@ exports.loginUser = async (req, res) => {
   } catch (err) {
     // ✅ Log full error
     logger.error('Login error:', err);
-    res.status(500).json({ msg: 'Server error' });
+    res.status(500).json({ 
+      msg: 'Server error',
+      success: false
+    });
   }
 };
 // @desc    Change password

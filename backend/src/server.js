@@ -77,18 +77,48 @@ const connectDB = require('./database/connection');
 // ----- API Routes -----
 try {
   app.use('/api/auth', require('./routes/auth'));
-  app.use('/api/weather', require('./routes/weather'));
-  app.use('/api/predictions', require('./routes/predictions'));
-  app.use('/api/marketplace', require('./routes/marketplace'));
-  app.use('/api/user', require('./routes/users'));
-  app.use('/api/analytics', require('./routes/analytics'));
-  app.use('/api/ml', require('./routes/ml'));
+  
+  // Load other routes with individual error handling
+  try {
+    app.use('/api/weather', require('./routes/weather'));
+  } catch (err) {
+    console.error('Failed to load weather routes:', err.message);
+  }
+  
+  try {
+    app.use('/api/predictions', require('./routes/predictions'));
+  } catch (err) {
+    console.error('Failed to load prediction routes:', err.message);
+  }
+  
+  try {
+    app.use('/api/marketplace', require('./routes/marketplace'));
+  } catch (err) {
+    console.error('Failed to load marketplace routes:', err.message);
+  }
+  
+  try {
+    app.use('/api/user', require('./routes/users'));
+  } catch (err) {
+    console.error('Failed to load user routes:', err.message);
+  }
+  
+  try {
+    app.use('/api/analytics', require('./routes/analytics'));
+  } catch (err) {
+    console.error('Failed to load analytics routes:', err.message);
+  }
+  
+  try {
+    app.use('/api/ml', require('./routes/ml'));
+  } catch (err) {
+    console.error('Failed to load ML routes:', err.message);
+  }
+  
 } catch (error) {
-  console.error('Failed to load API routes:', error); // ✅ Log full error
-  app.use('/api*', (req, res) => {
-    res.status(500).json({ error: 'API failed to start' });
-  });
+  console.error('Critical error loading auth routes:', error);
 }
+
 // ----- 404 for any /api/* route not matched -----
 app.use('/api*', (req, res) => {
   res.status(404).json({ success: false, message: 'API endpoint not found' });

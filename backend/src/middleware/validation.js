@@ -16,6 +16,26 @@ const validateRegister = [
     .notEmpty()
     .withMessage('Name is required'),
 
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('Must be a valid email'),
+
+  body('phone')
+    .optional()
+    .matches(/^\+?\d{7,15}$/)
+    .withMessage('Must be a valid phone number'),
+
+  // Custom validation to ensure at least one contact method is provided
+  body()
+    .custom((value, { req }) => {
+      const { email, phone } = req.body;
+      if (!email && !phone) {
+        throw new Error('Either email or phone is required');
+      }
+      return true;
+    }),
+
   body('password')
     .isLength({ min: 6 })
     .withMessage('Password must be at least 6 characters long'),
@@ -44,13 +64,33 @@ const validateRegister = [
 // ✅ Login validation (supports emailOrPhone)
 const validateLogin = [
   body('emailOrPhone')
-    .notEmpty()
-    .withMessage('Email or phone is required')
+    .optional()
     .custom((value) => {
+      if (!value) return true; // Will be handled by the next validation
       const isEmail = /\S+@\S+\.\S+/.test(value);
       const isPhone = /^\+?\d{7,15}$/.test(value);
       if (!isEmail && !isPhone) {
         throw new Error('Must be a valid email or phone number');
+      }
+      return true;
+    }),
+
+  body('email')
+    .optional()
+    .isEmail()
+    .withMessage('Must be a valid email'),
+
+  body('phone')
+    .optional()
+    .matches(/^\+?\d{7,15}$/)
+    .withMessage('Must be a valid phone number'),
+
+  // Custom validation to ensure at least one identifier is provided
+  body()
+    .custom((value, { req }) => {
+      const { emailOrPhone, email, phone } = req.body;
+      if (!emailOrPhone && !email && !phone) {
+        throw new Error('Email or phone is required');
       }
       return true;
     }),

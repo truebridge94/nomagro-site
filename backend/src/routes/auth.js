@@ -2,7 +2,7 @@
 const express = require('express');
 const auth = require('../middleware/auth');
 const validation = require('../middleware/validation');
-const authController = require('../controllers/authController'); // ✅ No destructuring
+const authController = require('../controllers/authController');
 
 const router = express.Router();
 
@@ -13,8 +13,18 @@ router.post('/forgot-password', authController.forgotPassword);
 router.post('/reset-password', validation.validateResetPassword, authController.resetPassword);
 
 // Protected routes
-router.get('/me', auth, authController.getMe);
-router.put('/profile', auth, authController.updateProfile);
+router.get('/me', auth, (req, res) => {
+  res.json({
+    success: true,
+    data: req.user
+  });
+});
+router.put('/profile', auth, (req, res) => {
+  res.status(501).json({
+    success: false,
+    message: 'Profile update not implemented yet'
+  });
+});
 router.put('/password', auth, authController.changePassword);
 router.post('/logout', auth, authController.logoutUser);
 
